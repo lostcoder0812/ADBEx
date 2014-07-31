@@ -859,9 +859,18 @@ retry:
         }
          /* check for required connection state */
         if (result && state != CS_ANY && result->connection_state != state) {
-            if (error_out)
-                *error_out = "invalid device state";
-            result = NULL;
+			/* regard CS_RECOVERY as CS_DEVICE, so wait-for-device script can be available in the recovery mode.*/
+			if (state == CS_DEVICE && result->connection_state == CS_RECOVERY)
+			{
+				fprintf(stderr, "ADBEx Debug: wait-for-device script is being used in recovery mode.\nstate == %d, result->connection_state == %d\n", 
+					state, result->connection_state);
+			}
+			else
+			{
+				if (error_out)
+					*error_out = "invalid device state";
+				result = NULL;
+			}
         }
     }
 
