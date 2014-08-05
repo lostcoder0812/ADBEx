@@ -86,6 +86,9 @@
     <ProjectReference Include="..\api\adbwinapi.vcxproj">
       <Project>{cfd6bcfb-0b7b-4d08-963d-45c93dd7dc49}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\winusb\AdbWinUsbApi.vcxproj">
+      <Project>{fbabb490-663a-4c17-a4cd-78dfff0565a1}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{FB426FCD-EA2A-430F-93E2-F0569A20F889}</ProjectGuid>

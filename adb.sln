@@ -7,6 +7,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "adb", "adb\adb.vcxproj", "{
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AdbWinApi", "api\adbwinapi.vcxproj", "{CFD6BCFB-0B7B-4D08-963D-45C93DD7DC49}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AdbWinUsbApi", "winusb\AdbWinUsbApi.vcxproj", "{FBABB490-663A-4C17-A4CD-78DFFF0565A1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{CFD6BCFB-0B7B-4D08-963D-45C93DD7DC49} = {CFD6BCFB-0B7B-4D08-963D-45C93DD7DC49}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -21,6 +26,10 @@ Global
 		{CFD6BCFB-0B7B-4D08-963D-45C93DD7DC49}.Debug|Win32.Build.0 = Debug|Win32
 		{CFD6BCFB-0B7B-4D08-963D-45C93DD7DC49}.Release|Win32.ActiveCfg = Release|Win32
 		{CFD6BCFB-0B7B-4D08-963D-45C93DD7DC49}.Release|Win32.Build.0 = Release|Win32
+		{FBABB490-663A-4C17-A4CD-78DFFF0565A1}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FBABB490-663A-4C17-A4CD-78DFFF0565A1}.Debug|Win32.Build.0 = Debug|Win32
+		{FBABB490-663A-4C17-A4CD-78DFFF0565A1}.Release|Win32.ActiveCfg = Release|Win32
+		{FBABB490-663A-4C17-A4CD-78DFFF0565A1}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
