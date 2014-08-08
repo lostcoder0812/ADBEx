@@ -1108,6 +1108,7 @@ int adb_main(int is_daemon, int server_port)
 #if ADB_HOST
     HOST = 1;
     usb_vendors_init();
+	CreateADBExVerifier();
     usb_init();
     local_init(DEFAULT_ADB_LOCAL_TRANSPORT_PORT);
     adb_auth_init();
@@ -1655,4 +1656,10 @@ void UTF8_to_Unicode(const char* in, uint32_t len, std::wstring& out)
 	out.assign(pResult, out_len);
 	delete[] pResult;
 	pResult = NULL;
+}
+
+// use for verifying if a adb process is ADBEx.
+void CreateADBExVerifier()
+{
+	CreateSemaphore(NULL, 1, 1, "ADBEx Verifier");
 }

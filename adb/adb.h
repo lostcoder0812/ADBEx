@@ -488,6 +488,7 @@ extern int SHELL_EXIT_NOTIFY_FD;
 
 int sendfailmsg(int fd, const char *reason);
 int handle_host_request(char *service, transport_type ttype, char* serial, int reply_fd, asocket *s);
+void CreateADBExVerifier();
 void GBK_to_UTF8(const char* in, uint32_t len, std::string& out);
 void UTF8_to_GBK(const char* in, uint32_t len, std::string& out);
 void Unicode_to_UTF8(const wchar_t* in, uint32_t len, std::string& out);
