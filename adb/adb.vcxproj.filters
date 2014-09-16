@@ -48,9 +48,6 @@
     <ClCompile Include="sysdeps_win32.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="transport.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="transport_local.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -70,6 +67,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="centraldir.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="transport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

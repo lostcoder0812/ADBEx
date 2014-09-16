@@ -29,7 +29,12 @@ static void transport_unref(atransport *t);
 
 static atransport transport_list = {
     &transport_list,
-    &transport_list
+    &transport_list,
+};
+
+static atransport pending_list = {
+    &pending_list,
+    &pending_list,
 };
 
 ADB_MUTEX_DEFINE( transport_lock );
@@ -197,7 +202,7 @@ write_packet(int  fd, const char* name, apacket** ppacket)
 
 static void transport_socket_events(int fd, unsigned events, void *_t)
 {
-    atransport *t = (atransport *)_t;
+	atransport *t = (atransport*)_t;
     D("transport_socket_events(fd=%d, events=%04x,...)\n", fd, events);
     if(events & FDE_READ){
         apacket *p = 0;
@@ -254,7 +259,7 @@ void send_packet(apacket *p, atransport *t)
 
 static void *output_thread(void *_t)
 {
-    atransport *t = (atransport *)_t;
+	atransport *t = (atransport*)_t;
     apacket *p;
 
     D("%s: starting transport output thread on fd %d, SYNC online (%d)\n",
@@ -309,7 +314,7 @@ oops:
 
 static void *input_thread(void *_t)
 {
-    atransport *t = (atransport *)_t;
+	atransport *t = (atransport*)_t;
     apacket *p;
     int active = 0;
 
@@ -470,7 +475,7 @@ device_tracker_ready( asocket*  socket )
 asocket*
 create_device_tracker(void)
 {
-    device_tracker*  tracker = (device_tracker*)calloc(1,sizeof(*tracker));
+	device_tracker*  tracker = (device_tracker*)calloc(1, sizeof(*tracker));
 
     if(tracker == 0) fatal("cannot allocate device tracker");
 
@@ -645,8 +650,11 @@ static void transport_registration_func(int _fd, unsigned ev, void *data)
         }
     }
 
-        /* put us on the master device list */
     adb_mutex_lock(&transport_lock);
+    /* remove from pending list */
+    t->next->prev = t->prev;
+    t->prev->next = t->next;
+    /* put us on the master device list */
     t->next = &transport_list;
     t->prev = transport_list.prev;
     t->next->prev = t;
@@ -851,6 +859,12 @@ retry:
     adb_mutex_unlock(&transport_lock);
 
     if (result) {
+        if (result->connection_state == CS_UNAUTHORIZED) {
+            if (error_out)
+                *error_out = "device unauthorized. Please check the confirmation dialog on your device.";
+            result = NULL;
+        }
+
          /* offline devices are ignored -- they are either being born or dying */
         if (result && result->connection_state == CS_OFFLINE) {
             if (error_out)
@@ -858,11 +872,11 @@ retry:
             result = NULL;
         }
          /* check for required connection state */
-        if (result && state != CS_ANY && result->connection_state != state) {
+		if (result && state != CS_ANY && result->connection_state != state) {
 			/* regard CS_RECOVERY as CS_DEVICE, so wait-for-device script can be available in the recovery mode.*/
 			if (state == CS_DEVICE && result->connection_state == CS_RECOVERY)
 			{
-				fprintf(stderr, "ADBEx Debug: wait-for-device script is being used in recovery mode.\nstate == %d, result->connection_state == %d\n", 
+				fprintf(stderr, "ADBEx Debug: wait-for-device script is being used in recovery mode.\nstate == %d, result->connection_state == %d\n",
 					state, result->connection_state);
 			}
 			else
@@ -871,8 +885,8 @@ retry:
 					*error_out = "invalid device state";
 				result = NULL;
 			}
-        }
-    }
+		}
+	}
 
     if (result) {
         /* found one that we can take */
@@ -897,6 +911,7 @@ static const char *statename(atransport *t)
     case CS_RECOVERY: return "recovery";
     case CS_SIDELOAD: return "sideload";
     case CS_NOPERM: return "no permissions";
+    case CS_UNAUTHORIZED: return "unauthorized";
     default: return "unknown";
     }
 }
@@ -991,9 +1006,10 @@ void close_usb_devices()
 }
 #endif // ADB_HOST
 
-void register_socket_transport(int s, const char *serial, int port, int local)
+int register_socket_transport(int s, const char *serial, int port, int local)
 {
-    atransport *t = (atransport *)calloc(1, sizeof(atransport));
+	atransport *t = (atransport*)calloc(1, sizeof(atransport));
+    atransport *n;
     char buff[32];
 
     if (!serial) {
@@ -1001,15 +1017,37 @@ void register_socket_transport(int s, const char *serial, int port, int local)
         serial = buff;
     }
     D("transport: %s init'ing for socket %d, on port %d\n", serial, s, port);
-    if ( init_socket_transport(t, s, port, local) < 0 ) {
-        adb_close(s);
+    if (init_socket_transport(t, s, port, local) < 0) {
         free(t);
-        return;
+        return -1;
     }
-    if(serial) {
-        t->serial = strdup(serial);
+
+    adb_mutex_lock(&transport_lock);
+    for (n = pending_list.next; n != &pending_list; n = n->next) {
+        if (n->serial && !strcmp(serial, n->serial)) {
+            adb_mutex_unlock(&transport_lock);
+            free(t);
+            return -1;
+        }
     }
+
+    for (n = transport_list.next; n != &transport_list; n = n->next) {
+        if (n->serial && !strcmp(serial, n->serial)) {
+            adb_mutex_unlock(&transport_lock);
+            free(t);
+            return -1;
+        }
+    }
+
+    t->next = &pending_list;
+    t->prev = pending_list.prev;
+    t->next->prev = t;
+    t->prev->next = t;
+    t->serial = strdup(serial);
+    adb_mutex_unlock(&transport_lock);
+
     register_transport(t);
+    return 0;
 }
 
 #if ADB_HOST
@@ -1069,7 +1107,7 @@ void unregister_all_tcp_transports()
 
 void register_usb_transport(usb_handle *usb, const char *serial, const char *devpath, unsigned writeable)
 {
-    atransport *t = (atransport *)calloc(1, sizeof(atransport));
+	atransport *t = (atransport*)calloc(1, sizeof(atransport));
     D("transport: %p init'ing for usb_handle %p (sn='%s')\n", t, usb,
       serial ? serial : "");
     init_usb_transport(t, usb, (writeable ? CS_OFFLINE : CS_NOPERM));
@@ -1079,6 +1117,14 @@ void register_usb_transport(usb_handle *usb, const char *serial, const char *dev
     if(devpath) {
         t->devpath = strdup(devpath);
     }
+
+    adb_mutex_lock(&transport_lock);
+    t->next = &pending_list;
+    t->prev = pending_list.prev;
+    t->next->prev = t;
+    t->prev->next = t;
+    adb_mutex_unlock(&transport_lock);
+
     register_transport(t);
 }
 
@@ -1102,12 +1148,12 @@ void unregister_usb_transport(usb_handle *usb)
 
 int readx(int fd, void *ptr, size_t len)
 {
-    char *p = (char *)ptr;
+	char *p = (char*)ptr;
     int r;
 #if ADB_TRACE
-    int  len0 = len;
+    size_t len0 = len;
 #endif
-    D("readx: fd=%d wanted=%d\n", fd, (int)len);
+    D("readx: fd=%d wanted=%zu\n", fd, len);
     while(len > 0) {
         r = adb_read(fd, p, len);
         if(r > 0) {
@@ -1126,8 +1172,8 @@ int readx(int fd, void *ptr, size_t len)
     }
 
 #if ADB_TRACE
-    D("readx: fd=%d wanted=%d got=%d\n", fd, len0, len0 - len);
-    dump_hex( (const unsigned char*)ptr, len0 );
+    D("readx: fd=%d wanted=%zu got=%zu\n", fd, len0, len0 - len);
+	dump_hex((const unsigned char*)ptr, len0);
 #endif
     return 0;
 }
@@ -1139,7 +1185,7 @@ int writex(int fd, const void *ptr, size_t len)
 
 #if ADB_TRACE
     D("writex: fd=%d len=%d: ", fd, (int)len);
-    dump_hex( (const unsigned char*)ptr, len );
+	dump_hex((const unsigned char*)ptr, len);
 #endif
     while(len > 0) {
         r = adb_write(fd, p, len);
@@ -1151,6 +1197,10 @@ int writex(int fd, const void *ptr, size_t len)
                 D("writex: fd=%d error %d: %s\n", fd, errno, strerror(errno));
                 if (errno == EINTR)
                     continue;
+                if (errno == EAGAIN) {
+                    adb_sleep_ms(1); // just yield some cpu time
+                    continue;
+                }
             } else {
                 D("writex: fd=%d disconnected\n", fd);
             }

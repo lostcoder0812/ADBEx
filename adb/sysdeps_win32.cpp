@@ -94,19 +94,19 @@ typedef struct SocketPairRec_*  SocketPair;
 
 typedef struct FHRec_
 {
-    FHClass    clazz;
-    int        used;
-    int        eof;
-    union {
-        HANDLE      handle;
-        SOCKET      socket;
-        SocketPair  pair;
-    } u;
+	FHClass    clazz;
+	int        used;
+	int        eof;
+	union {
+		HANDLE      handle;
+		SOCKET      socket;
+		SocketPair  pair;
+	} u;
 
-    HANDLE    event;
-    int       mask;
+	HANDLE    event;
+	int       mask;
 
-    char  name[32];
+	char  name[32];
 
 } FHRec;
 

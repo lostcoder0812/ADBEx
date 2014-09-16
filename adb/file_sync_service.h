@@ -1,29 +1,29 @@
 /*
- * Copyright (C) 2007 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+* Copyright (C) 2007 The Android Open Source Project
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 
 #ifndef _FILE_SYNC_SERVICE_H_
 #define _FILE_SYNC_SERVICE_H_
 
 #ifdef HAVE_BIG_ENDIAN
-static inline unsigned __swap_uint32(unsigned x) 
+static inline unsigned __swap_uint32(unsigned x)
 {
-    return (((x) & 0xFF000000) >> 24)
-        | (((x) & 0x00FF0000) >> 8)
-        | (((x) & 0x0000FF00) << 8)
-        | (((x) & 0x000000FF) << 24);
+	return (((x)& 0xFF000000) >> 24)
+		| (((x)& 0x00FF0000) >> 8)
+		| (((x)& 0x0000FF00) << 8)
+		| (((x)& 0x000000FF) << 24);
 }
 #define htoll(x) __swap_uint32(x)
 #define ltohl(x) __swap_uint32(x)
@@ -47,40 +47,40 @@ static inline unsigned __swap_uint32(unsigned x)
 #define ID_QUIT MKID('Q','U','I','T')
 
 typedef union {
-    unsigned id;
-    struct {
-        unsigned id;
-        unsigned namelen;
-    } req;
-    struct {
-        unsigned id;
-        unsigned mode;
-        unsigned size;
-        unsigned time;
-    } stat;
-    struct {
-        unsigned id;
-        unsigned mode;
-        unsigned size;
-        unsigned time;
-        unsigned namelen;
-    } dent;
-    struct {
-        unsigned id;
-        unsigned size;
-    } data;
-    struct {
-        unsigned id;
-        unsigned msglen;
-    } status;    
+	unsigned id;
+	struct {
+		unsigned id;
+		unsigned namelen;
+	} req;
+	struct {
+		unsigned id;
+		unsigned mode;
+		unsigned size;
+		unsigned time;
+	} stat;
+	struct {
+		unsigned id;
+		unsigned mode;
+		unsigned size;
+		unsigned time;
+		unsigned namelen;
+	} dent;
+	struct {
+		unsigned id;
+		unsigned size;
+	} data;
+	struct {
+		unsigned id;
+		unsigned msglen;
+	} status;
 } syncmsg;
 
 
 void file_sync_service(int fd, void *cookie);
 int do_sync_ls(const char *path);
-int do_sync_push(const char *lpath, const char *rpath, int verifyApk);
+int do_sync_push(const char *lpath, const char *rpath, int verifyApk, int show_progress);
 int do_sync_sync(const char *lpath, const char *rpath, int listonly);
-int do_sync_pull(const char *rpath, const char *lpath);
+int do_sync_pull(const char *rpath, const char *lpath, int show_progress, int pullTime);
 
 #define SYNC_DATA_MAX (64*1024)
 
