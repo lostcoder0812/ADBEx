@@ -1,7 +1,9 @@
 ADBEx
 =====
 
-改进版ADB  
+增强版ADB  
+
+从[https://github.com/android/platform_system_core/tree/master/adb](https://github.com/android/platform_system_core/tree/master/adb)拉下来的adb，我把代码放到了VS项目里，顺便加了一些功能。
 
 目前功能  
 

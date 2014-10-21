@@ -38,6 +38,7 @@
 #define ADB_VERSION_MINOR 0         // Used for help/version information
 
 #define ADB_SERVER_VERSION    31    // Increment this when we want to force users to start a new adb server
+#define ADBEX_VERSION	140916		// ADBEx Version
 
 typedef struct amessage amessage;
 typedef struct apacket apacket;
