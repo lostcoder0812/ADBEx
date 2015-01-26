@@ -18,8 +18,6 @@ typedef struct Zipentry {
     struct Zipentry* next;
 } Zipentry;
 
-typedef int ssize_t;
-
 typedef struct Zipfile
 {
     const unsigned char *buf;

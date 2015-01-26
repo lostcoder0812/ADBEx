@@ -16,7 +16,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-//#include <unistd.h>
+#include <unistd.h>
 #include <errno.h>
 #include <string.h>
 #include <ctype.h>
@@ -50,8 +50,8 @@ int sendfailmsg(int fd, const char *reason)
 static unsigned local_socket_next_id = 1;
 
 static asocket local_socket_list = {
-	&local_socket_list,
-	&local_socket_list
+    .next = &local_socket_list,
+    .prev = &local_socket_list,
 };
 
 /* the the list of currently closing local sockets.
@@ -59,8 +59,8 @@ static asocket local_socket_list = {
 ** write to their fd.
 */
 static asocket local_socket_closing_list = {
-	&local_socket_closing_list,
-	&local_socket_closing_list
+    .next = &local_socket_closing_list,
+    .prev = &local_socket_closing_list,
 };
 
 // Parse the global list of sockets to find one with id |local_id|.
@@ -282,7 +282,7 @@ static void local_socket_close_locked(asocket *s)
 
 static void local_socket_event_func(int fd, unsigned ev, void *_s)
 {
-	asocket *s = (asocket *)_s;
+    asocket *s = _s;
 
     D("LS(%d): event_func(fd=%d(==%d), ev=%04x)\n", s->id, s->fd, fd, ev);
 
@@ -346,7 +346,7 @@ static void local_socket_event_func(int fd, unsigned ev, void *_s)
 
         while(avail > 0) {
             r = adb_read(fd, x, avail);
-            D("LS(%d): post adb_read(fd=%d,...) r=%d (errno=%d) avail=%d\n", s->id, s->fd, r, r<0?errno:0, avail);
+            D("LS(%d): post adb_read(fd=%d,...) r=%d (errno=%d) avail=%zu\n", s->id, s->fd, r, r<0?errno:0, avail);
             if(r > 0) {
                 avail -= r;
                 x += r;
@@ -412,7 +412,7 @@ static void local_socket_event_func(int fd, unsigned ev, void *_s)
 
 asocket *create_local_socket(int fd)
 {
-	asocket *s = (asocket *)calloc(1, sizeof(asocket));
+    asocket *s = calloc(1, sizeof(asocket));
     if (s == NULL) fatal("cannot allocate socket");
     s->fd = fd;
     s->enqueue = local_socket_enqueue;
@@ -543,7 +543,7 @@ static void remote_socket_close(asocket *s)
 
 static void remote_socket_disconnect(void*  _s, atransport*  t)
 {
-	asocket*  s = (asocket*)_s;
+    asocket*  s    = _s;
     asocket*  peer = s->peer;
 
     D("remote_socket_disconnect RS(%d)\n", s->id);
@@ -565,7 +565,7 @@ asocket *create_remote_socket(unsigned id, atransport *t)
     adisconnect* dis;
 
     if (id == 0) fatal("invalid remote socket id (0)");
-	s = (asocket*)calloc(1, sizeof(aremotesocket));
+    s = calloc(1, sizeof(aremotesocket));
     dis = &((aremotesocket*)s)->disconnect;
 
     if (s == NULL) fatal("cannot allocate socket");
@@ -896,7 +896,7 @@ static void smart_socket_close(asocket *s)
 static asocket *create_smart_socket(void)
 {
     D("Creating smart socket \n");
-	asocket *s = (asocket*)calloc(1, sizeof(asocket));
+    asocket *s = calloc(1, sizeof(asocket));
     if (s == NULL) fatal("cannot allocate socket");
     s->enqueue = smart_socket_enqueue;
     s->ready = smart_socket_ready;

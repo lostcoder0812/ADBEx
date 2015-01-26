@@ -170,7 +170,7 @@ static void find_usb_device(const char *base,
             }
 
 //            DBGX("[ scanning %s ]\n", devname);
-            if((fd = unix_open(devname, O_RDONLY)) < 0) {
+            if((fd = unix_open(devname, O_RDONLY | O_CLOEXEC)) < 0) {
                 continue;
             }
 
@@ -179,7 +179,7 @@ static void find_usb_device(const char *base,
 
                 // should have device and configuration descriptors, and atleast two endpoints
             if (desclength < USB_DT_DEVICE_SIZE + USB_DT_CONFIG_SIZE) {
-                D("desclength %d is too small\n", desclength);
+                D("desclength %zu is too small\n", desclength);
                 adb_close(fd);
                 continue;
             }
@@ -237,8 +237,20 @@ static void find_usb_device(const char *base,
                             // looks like ADB...
                         ep1 = (struct usb_endpoint_descriptor *)bufptr;
                         bufptr += USB_DT_ENDPOINT_SIZE;
+                            // For USB 3.0 SuperSpeed devices, skip potential
+                            // USB 3.0 SuperSpeed Endpoint Companion descriptor
+                        if (bufptr+2 <= devdesc + desclength &&
+                            bufptr[0] == USB_DT_SS_EP_COMP_SIZE &&
+                            bufptr[1] == USB_DT_SS_ENDPOINT_COMP) {
+                            bufptr += USB_DT_SS_EP_COMP_SIZE;
+                        }
                         ep2 = (struct usb_endpoint_descriptor *)bufptr;
                         bufptr += USB_DT_ENDPOINT_SIZE;
+                        if (bufptr+2 <= devdesc + desclength &&
+                            bufptr[0] == USB_DT_SS_EP_COMP_SIZE &&
+                            bufptr[1] == USB_DT_SS_ENDPOINT_COMP) {
+                            bufptr += USB_DT_SS_EP_COMP_SIZE;
+                        }
 
                         if (bufptr > devdesc + desclength ||
                             ep1->bLength != USB_DT_ENDPOINT_SIZE ||
@@ -597,10 +609,10 @@ static void register_device(const char *dev_name, const char *devpath,
     usb->mark = 1;
     usb->reaper_thread = 0;
 
-    usb->desc = unix_open(usb->fname, O_RDWR);
+    usb->desc = unix_open(usb->fname, O_RDWR | O_CLOEXEC);
     if(usb->desc < 0) {
         /* if we fail, see if have read-only access */
-        usb->desc = unix_open(usb->fname, O_RDONLY);
+        usb->desc = unix_open(usb->fname, O_RDONLY | O_CLOEXEC);
         if(usb->desc < 0) goto fail;
         usb->writeable = 0;
         D("[ usb open read-only %s fd = %d]\n", usb->fname, usb->desc);

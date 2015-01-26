@@ -15,97 +15,133 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="adb.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="adb_auth_host.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="adb_client.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="commandline.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="console.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="file_sync_client.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="get_my_path_windows.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="list.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="services.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="sockets.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="sysdeps_win32.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="transport_local.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="transport_usb.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="usb_vendors.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="usb_windows.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="utils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="zipfile.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="centraldir.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="transport.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="adb.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="adb_auth.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="adb_client.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="fdevent.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="file_sync_service.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="mutex_list.h">
+    <ClInclude Include="transport.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="sysdeps.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="transport.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="usb_vendors.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="utils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="private.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="mutex_list.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="file_sync_service.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fdevent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="adb_trace.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="adb_client.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="adb_auth.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="adb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="zipfile.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="usb_windows.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="usb_osx.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="usb_linux_client.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="usb_linux.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="usb_libusb.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="transport_usb.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="transport_local.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="transport.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test_track_jdwp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test_track_devices.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sysdeps_win32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sockets.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="set_verity_enable_state_service.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="services.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="remount_service.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="jdwp_service.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="get_my_path_windows.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="get_my_path_linux.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="get_my_path_freebsd.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="get_my_path_darwin.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="framebuffer_service.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="file_sync_service.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="file_sync_client.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fdevent.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="console.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="commandline.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="centraldir.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="adb_client.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="adb_auth_host.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="adb_auth_client.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="adb.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

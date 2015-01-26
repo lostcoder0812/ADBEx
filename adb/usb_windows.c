@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <win32_adb.h>
+
+#include <winsock2.h>
 #include <windows.h>
 #include <winerror.h>
 #include <errno.h>
@@ -21,13 +22,11 @@
 #include <adb_api.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <malloc.h>
 
 #include "sysdeps.h"
 
 #define   TRACE_TAG  TRACE_USB
 #include "adb.h"
-#include <crtdbg.h>
 
 /** Structure usb_handle describes our connection to the usb device via
   AdbWinApi.dll. This structure is returned from usb_open() routine and
@@ -61,8 +60,8 @@ static const GUID usb_class_id = ANDROID_USB_CLASS_ID;
 
 /// List of opened usb handles
 static usb_handle handle_list = {
-  &handle_list,
-  &handle_list
+  .prev = &handle_list,
+  .next = &handle_list,
 };
 
 /// Locker for the list of opened usb handles
@@ -302,9 +301,7 @@ int usb_write(usb_handle* handle, const void* data, int len) {
   return -1;
 }
 
-int usb_read(usb_handle *handle, void* _data, int len) {
-
-	char* data = (char*)_data;
+int usb_read(usb_handle *handle, void* data, int len) {
   unsigned long time_out = 0;
   unsigned long read = 0;
   int ret;
@@ -315,14 +312,14 @@ int usb_read(usb_handle *handle, void* _data, int len) {
       int xfer = (len > 4096) ? 4096 : len;
 
       ret = AdbReadEndpointSync(handle->adb_read_pipe,
-                                  (void*)data,
+                                  data,
                                   (unsigned long)xfer,
                                   &read,
                                   time_out);
       int saved_errno = GetLastError();
       D("usb_write got: %ld, expected: %d, errno: %d\n", read, xfer, saved_errno);
       if (ret) {
-        data += read;
+        data = (char *)data + read;
         len -= read;
 
         if (len == 0)

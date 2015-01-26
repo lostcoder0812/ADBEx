@@ -11,84 +11,58 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="adb.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="adb_auth_host.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="adb_client.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="centraldir.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="commandline.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="console.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="file_sync_client.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="get_my_path_windows.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="list.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="services.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="sockets.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="sysdeps_win32.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="transport.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="transport_local.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="transport_usb.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="usb_vendors.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="usb_windows.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="utils.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="zipfile.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="adb.h" />
-    <ClInclude Include="adb_auth.h" />
-    <ClInclude Include="adb_client.h" />
-    <ClInclude Include="fdevent.h" />
-    <ClInclude Include="file_sync_service.h" />
-    <ClInclude Include="mutex_list.h" />
-    <ClInclude Include="private.h" />
-    <ClInclude Include="sysdeps.h" />
-    <ClInclude Include="transport.h" />
-    <ClInclude Include="usb_vendors.h" />
-    <ClInclude Include="utils.h" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\api\adbwinapi.vcxproj">
       <Project>{cfd6bcfb-0b7b-4d08-963d-45c93dd7dc49}</Project>
     </ProjectReference>
     <ProjectReference Include="..\winusb\AdbWinUsbApi.vcxproj">
       <Project>{fbabb490-663a-4c17-a4cd-78dfff0565a1}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="adb.h" />
+    <ClInclude Include="adb_auth.h" />
+    <ClInclude Include="adb_client.h" />
+    <ClInclude Include="adb_trace.h" />
+    <ClInclude Include="fdevent.h" />
+    <ClInclude Include="file_sync_service.h" />
+    <ClInclude Include="mutex_list.h" />
+    <ClInclude Include="private.h" />
+    <ClInclude Include="sysdeps.h" />
+    <ClInclude Include="transport.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="adb.c" />
+    <ClCompile Include="adb_auth_client.c" />
+    <ClCompile Include="adb_auth_host.c" />
+    <ClCompile Include="adb_client.c" />
+    <ClCompile Include="centraldir.c" />
+    <ClCompile Include="commandline.c" />
+    <ClCompile Include="console.c" />
+    <ClCompile Include="fdevent.c" />
+    <ClCompile Include="file_sync_client.c" />
+    <ClCompile Include="file_sync_service.c" />
+    <ClCompile Include="framebuffer_service.c" />
+    <ClCompile Include="get_my_path_darwin.c" />
+    <ClCompile Include="get_my_path_freebsd.c" />
+    <ClCompile Include="get_my_path_linux.c" />
+    <ClCompile Include="get_my_path_windows.c" />
+    <ClCompile Include="jdwp_service.c" />
+    <ClCompile Include="remount_service.c" />
+    <ClCompile Include="services.c" />
+    <ClCompile Include="set_verity_enable_state_service.c" />
+    <ClCompile Include="sockets.c" />
+    <ClCompile Include="sysdeps_win32.c" />
+    <ClCompile Include="test_track_devices.c" />
+    <ClCompile Include="test_track_jdwp.c" />
+    <ClCompile Include="transport.c" />
+    <ClCompile Include="transport_local.c" />
+    <ClCompile Include="transport_usb.c" />
+    <ClCompile Include="usb_libusb.c" />
+    <ClCompile Include="usb_linux.c" />
+    <ClCompile Include="usb_linux_client.c" />
+    <ClCompile Include="usb_osx.c" />
+    <ClCompile Include="usb_windows.c" />
+    <ClCompile Include="zipfile.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{FB426FCD-EA2A-430F-93E2-F0569A20F889}</ProjectGuid>
