@@ -849,6 +849,7 @@ int do_sync_push(const char *lpath, const char *rpath, int show_progress)
             sync_quit(fd);
             return 0;
         }
+		free(UTF8rpath);
     }
 
     return 0;
@@ -1091,6 +1092,7 @@ int do_sync_pull(const char *rpath, const char *lpath, int show_progress, int co
         fprintf(stderr,"remote object '%s' not a file or directory\n", rpath);
         return 1;
     }
+	free(UTF8rpath);
 }
 
 int do_sync_sync(const char *lpath, const char *rpath, int listonly)

@@ -1393,17 +1393,8 @@ int adb_commandline(int argc, char **argv)
         while (argc-- > 0) {
             char *quoted = escape_arg(*argv++);
             strncat(buf, " ", sizeof(buf) - 1);
-
-            char *UTF8Str = NULL;
-            int UTF8Strlen = 0;
-            UTF8Strlen = GBKToUTF8(quoted, NULL, 0);
-            UTF8Str = malloc(UTF8Strlen + 1);
-			UTF8Strlen = GBKToUTF8(quoted, UTF8Str, UTF8Strlen);
-            strncat(buf, UTF8Str, UTF8Strlen);
-            
-            //strncat(buf, quoted, sizeof(buf) - 1);
+            strncat(buf, quoted, sizeof(buf) - 1);
             free(quoted);
-			free(UTF8Str);
         }
 
         for(;;) {
