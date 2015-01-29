@@ -28,10 +28,12 @@
 #include <stdarg.h>
 #include <stddef.h>
 
+#include "adb_trace.h"
 #include "fdevent.h"
 #include "transport.h"
 #include "sysdeps.h"
 
+#define TRACE_TAG  TRACE_FDEVENT
 
 /* !!! Do not enable DEBUG for the adb that will run as the server:
 ** both stdout and stderr are used to communicate between the client
@@ -57,16 +59,6 @@ static void fatal(const char *fn, const char *fmt, ...)
 #define FATAL(x...) fatal(__FUNCTION__, x)
 
 #if DEBUG
-#define D(...) \
-    do { \
-        adb_mutex_lock(&D_lock);               \
-        int save_errno = errno;                \
-        fprintf(stderr, "%s::%s():", __FILE__, __FUNCTION__);  \
-        errno = save_errno;                    \
-        fprintf(stderr, __VA_ARGS__);          \
-        adb_mutex_unlock(&D_lock);             \
-        errno = save_errno;                    \
-    } while(0)
 static void dump_fde(fdevent *fde, const char *info)
 {
     adb_mutex_lock(&D_lock);
@@ -78,7 +70,6 @@ static void dump_fde(fdevent *fde, const char *info)
     adb_mutex_unlock(&D_lock);
 }
 #else
-#define D(...) ((void)0)
 #define dump_fde(fde, info) do { } while(0)
 #endif
 
@@ -670,6 +661,8 @@ void fdevent_subproc_setup()
     if(adb_socketpair(s)) {
         FATAL("cannot create shell-exit socket-pair\n");
     }
+    D("socketpair: (%d,%d)", s[0], s[1]);
+
     SHELL_EXIT_NOTIFY_FD = s[0];
     fdevent *fde;
     fde = fdevent_create(s[1], fdevent_subproc_event_func, NULL);

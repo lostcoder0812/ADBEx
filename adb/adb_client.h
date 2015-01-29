@@ -34,15 +34,15 @@ void adb_set_tcp_specifics(int server_port);
 void adb_set_tcp_name(const char* hostname);
 
 /* Return the console port of the currently connected emulator (if any)
-* of -1 if there is no emulator, and -2 if there is more than one.
-* assumes adb_set_transport() was alled previously...
-*/
+ * of -1 if there is no emulator, and -2 if there is more than one.
+ * assumes adb_set_transport() was alled previously...
+ */
 int  adb_get_emulator_console_port(void);
 
 /* send commands to the current emulator instance. will fail if there
-* is zero, or more than one emulator connected (or if you use -s <serial>
-* with a <serial> that does not designate an emulator)
-*/
+ * is zero, or more than one emulator connected (or if you use -s <serial>
+ * with a <serial> that does not designate an emulator)
+ */
 int  adb_send_emulator_command(int  argc, char**  argv);
 
 /* return verbose error string from last operation */

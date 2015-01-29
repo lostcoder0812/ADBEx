@@ -25,6 +25,7 @@
 #include "adb_auth.h"
 #include "fdevent.h"
 #include "mincrypt/rsa.h"
+#include "mincrypt/sha.h"
 
 #define TRACE_TAG TRACE_AUTH
 
@@ -45,6 +46,10 @@ static char *key_paths[] = {
 static fdevent listener_fde;
 static int framework_fd = -1;
 
+/*static void usb_disconnected(void* unused, atransport* t);
+static struct adisconnect usb_disconnect = { usb_disconnected, 0, 0, 0 };
+static atransport* usb_transport;
+static bool needs_retry = false;*/
 
 static void read_keys(const char *file, struct listnode *list)
 {
@@ -137,20 +142,33 @@ int adb_auth_verify(void *token, void *sig, int siglen)
 {
     struct listnode *item;
     struct adb_public_key *key;
-    int ret;
+    //struct listnode key_list;
+    int ret = 0;
 
     if (siglen != RSANUMBYTES)
         return 0;
 
+    load_keys(&key_list);
+
     list_for_each(item, &key_list) {
         key = node_to_item(item, struct adb_public_key, node);
-        ret = RSA_verify(&key->key, sig, siglen, token);
+        ret = RSA_verify(&key->key, sig, siglen, token, SHA_DIGEST_SIZE);
         if (ret)
             return 1;
     }
 
+    free_keys(&key_list);
+
     return 0;
 }
+
+/*static void usb_disconnected(void* unused, atransport* t)
+{
+    D("USB disconnect\n");
+    remove_transport_disconnect(usb_transport, &usb_disconnect);
+    usb_transport = NULL;
+    needs_retry = false;
+}*/
 
 static void adb_auth_event(int fd, unsigned events, void *data)
 {
@@ -160,8 +178,10 @@ static void adb_auth_event(int fd, unsigned events, void *data)
 
     if (events & FDE_READ) {
         ret = unix_read(fd, response, sizeof(response));
-        if (ret < 0) {
-            D("Disconnect");
+        if (ret <= 0) {
+            D("Framework disconnect\n");
+            /*if (usb_transport)
+                fdevent_remove(&usb_transport->auth_fde);*/
             fdevent_remove(&t->auth_fde);
             framework_fd = -1;
         }
@@ -177,8 +197,14 @@ void adb_auth_confirm_key(unsigned char *key, size_t len, atransport *t)
     char msg[MAX_PAYLOAD];
     int ret;
 
+    /*if (!usb_transport) {
+        usb_transport = t;
+        add_transport_disconnect(t, &usb_disconnect);
+    }*/
+
     if (framework_fd < 0) {
         D("Client not connected\n");
+        //needs_retry = true;
         return;
     }
 
@@ -219,6 +245,11 @@ static void adb_auth_listener(int fd, unsigned events, void *data)
     }
 
     framework_fd = s;
+
+    /*if (needs_retry) {
+        needs_retry = false;
+        send_auth_request(usb_transport);
+    }*/
 }
 
 void adb_auth_init(void)
@@ -233,6 +264,7 @@ void adb_auth_init(void)
         D("Failed to get adbd socket\n");
         return;
     }
+    //fcntl(fd, F_SETFD, FD_CLOEXEC);
 
     ret = listen(fd, 4);
     if (ret < 0) {

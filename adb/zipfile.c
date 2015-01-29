@@ -11,10 +11,10 @@ init_zipfile(const void* data, size_t size)
 {
     int err;
 
-    Zipfile *file = (Zipfile *)malloc(sizeof(Zipfile));
+    Zipfile *file = malloc(sizeof(Zipfile));
     if (file == NULL) return NULL;
     memset(file, 0, sizeof(Zipfile));
-    file->buf = (const unsigned char *)data;
+    file->buf = data;
     file->bufsize = size;
 
     err = read_central_dir(file);
@@ -64,7 +64,7 @@ get_zipentry_name(zipentry_t entry)
 {
     Zipentry* e = (Zipentry*)entry;
     int l = e->fileNameLength;
-    char* s = (char*)malloc(l+1);
+    char* s = malloc(l+1);
     memcpy(s, e->fileName, l);
     s[l] = '\0';
     return s;
@@ -79,7 +79,6 @@ static int
 uninflate(unsigned char* out, int unlen, const unsigned char* in, int clen)
 {
     z_stream zstream;
-    unsigned long crc;
     int err = 0;
     int zerr;
 
@@ -87,7 +86,7 @@ uninflate(unsigned char* out, int unlen, const unsigned char* in, int clen)
     zstream.zalloc = Z_NULL;
     zstream.zfree = Z_NULL;
     zstream.opaque = Z_NULL;
-    zstream.next_in = (Bytef*)in;
+    zstream.next_in = (void*)in;
     zstream.avail_in = clen;
     zstream.next_out = (Bytef*) out;
     zstream.avail_out = unlen;
@@ -122,7 +121,7 @@ decompress_zipentry(zipentry_t e, void* buf, int bufsize)
             memcpy(buf, entry->data, entry->uncompressedSize);
             return 0;
         case DEFLATED:
-            return uninflate((unsigned char*)buf, bufsize, entry->data, entry->compressedSize);
+            return uninflate(buf, bufsize, entry->data, entry->compressedSize);
         default:
             return -1;
     }

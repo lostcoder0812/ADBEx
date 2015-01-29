@@ -18,8 +18,8 @@
 #define __ADB_H
 
 #include <limits.h>
-#include <string>
 
+#include "adb_trace.h"
 #include "transport.h"  /* readx(), writex() */
 
 #define MAX_PAYLOAD 4096
@@ -37,9 +37,9 @@
 #define ADB_VERSION_MAJOR 1         // Used for help/version information
 #define ADB_VERSION_MINOR 0         // Used for help/version information
 
-#define ADB_SERVER_VERSION    31    // Increment this when we want to force users to start a new adb server
-#define ADBEX_VERSION	140916		// ADBEx Version
-
+#define ADB_SERVER_VERSION    32    // Increment this when we want to force users to start a new adb server
+#define ADBEX_VERSION   140916      // ADBEx Version
+ 
 typedef struct amessage amessage;
 typedef struct apacket apacket;
 typedef struct asocket asocket;
@@ -325,11 +325,14 @@ asocket*  create_jdwp_tracker_service_socket();
 int       create_jdwp_connection_fd(int  jdwp_pid);
 #endif
 
-int handle_forward_request(char* service, transport_type ttype, char* serial, int reply_fd);
+int handle_forward_request(const char* service, transport_type ttype, char* serial, int reply_fd);
 
 #if !ADB_HOST
 void framebuffer_service(int fd, void *cookie);
+// Allow enable-verity to write to system and vendor block devices
+int make_block_device_writable(const char* dev);
 void remount_service(int fd, void *cookie);
+void set_verity_enabled_state_service(int fd, void* cookie);
 #endif
 
 /* packet allocator */
@@ -339,84 +342,8 @@ void put_apacket(apacket *p);
 int check_header(apacket *p);
 int check_data(apacket *p);
 
-/* define ADB_TRACE to 1 to enable tracing support, or 0 to disable it */
-
-#define  ADB_TRACE    1
-
-/* IMPORTANT: if you change the following list, don't
- * forget to update the corresponding 'tags' table in
- * the adb_trace_init() function implemented in adb.c
- */
-typedef enum {
-    TRACE_ADB = 0,   /* 0x001 */
-    TRACE_SOCKETS,
-    TRACE_PACKETS,
-    TRACE_TRANSPORT,
-    TRACE_RWX,       /* 0x010 */
-    TRACE_USB,
-    TRACE_SYNC,
-    TRACE_SYSDEPS,
-    TRACE_JDWP,      /* 0x100 */
-    TRACE_SERVICES,
-    TRACE_AUTH,
-} AdbTrace;
-
-#if ADB_TRACE
-
-#if !ADB_HOST
-/*
- * When running inside the emulator, guest's adbd can connect to 'adb-debug'
- * qemud service that can display adb trace messages (on condition that emulator
- * has been started with '-debug adb' option).
- */
-
-/* Delivers a trace message to the emulator via QEMU pipe. */
-void adb_qemu_trace(const char* fmt, ...);
-/* Macro to use to send ADB trace messages to the emulator. */
-#define DQ(...)    adb_qemu_trace(__VA_ARGS__)
-#else
-#define DQ(...) ((void)0)
-#endif  /* !ADB_HOST */
-
-  extern int     adb_trace_mask;
-  extern unsigned char    adb_trace_output_count;
-  void    adb_trace_init(void);
-
-#  define ADB_TRACING  ((adb_trace_mask & (1 << TRACE_TAG)) != 0)
-
-  /* you must define TRACE_TAG before using this macro */
-#  define  D(...)                                      \
-        do {                                           \
-            if (ADB_TRACING) {                         \
-                int save_errno = errno;                \
-                adb_mutex_lock(&D_lock);               \
-                fprintf(stderr, "%s::%s():",           \
-                        __FILE__, __FUNCTION__);       \
-                errno = save_errno;                    \
-                fprintf(stderr, __VA_ARGS__ );         \
-                fflush(stderr);                        \
-                adb_mutex_unlock(&D_lock);             \
-                errno = save_errno;                    \
-           }                                           \
-        } while (0)
-#  define  DR(...)                                     \
-        do {                                           \
-            if (ADB_TRACING) {                         \
-                int save_errno = errno;                \
-                adb_mutex_lock(&D_lock);               \
-                errno = save_errno;                    \
-                fprintf(stderr, __VA_ARGS__ );         \
-                fflush(stderr);                        \
-                adb_mutex_unlock(&D_lock);             \
-                errno = save_errno;                    \
-           }                                           \
-        } while (0)
-#else
-#  define  D(...)          ((void)0)
-#  define  DR(...)         ((void)0)
-#  define  ADB_TRACING     0
-#endif /* ADB_TRACE */
-
+// Define it if you want to dump packets.
+#define DEBUG_PACKETS 0
 
 #if !DEBUG_PACKETS
 #define print_packet(tag,p) do {} while (0)
@@ -455,7 +382,6 @@ void usb_kick(usb_handle *h);
 int is_adb_interface(int vid, int pid, int usb_class, int usb_subclass, int usb_protocol);
 #endif
 
-unsigned host_to_le32(unsigned n);
 int adb_commandline(int argc, char **argv);
 
 int connection_state(atransport *t);
@@ -493,10 +419,16 @@ typedef enum {
 
 int sendfailmsg(int fd, const char *reason);
 int handle_host_request(char *service, transport_type ttype, char* serial, int reply_fd, asocket *s);
+
 void CreateADBExVerifier();
-void GBK_to_UTF8(const char* in, uint32_t len, std::string& out);
-void UTF8_to_GBK(const char* in, uint32_t len, std::string& out);
-void Unicode_to_UTF8(const wchar_t* in, uint32_t len, std::string& out);
-void UTF8_to_Unicode(const char* in, uint32_t len, std::wstring& out);
+int GBKToUTF8(char *lpGBKStr, char *lpUTF8Str, int nUTF8StrLen);
+int UTF8ToGBK(char *lpGBKStr, char *lpUTF8Str, int nGBKStrLen);
+
+#ifdef _MSC_VER 
+//not #if defined(_WIN32) || defined(_WIN64) because we have strncasecmp in mingw
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+#include<windows.h>
+#endif
 
 #endif

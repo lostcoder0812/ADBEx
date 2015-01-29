@@ -16,8 +16,8 @@
 
 #include <limits.h>
 #include <assert.h>
-#include <win32_adb.h>
 #include <windows.h>
+#include <win32_adb.h>
 
 void get_my_path(char *exe, size_t maxLen)
 {

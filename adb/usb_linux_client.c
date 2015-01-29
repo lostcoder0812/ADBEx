@@ -33,6 +33,7 @@
 
 #define MAX_PACKET_SIZE_FS	64
 #define MAX_PACKET_SIZE_HS	512
+#define MAX_PACKET_SIZE_SS	1024
 
 #define cpu_to_le16(x)  htole16(x)
 #define cpu_to_le32(x)  htole32(x)
@@ -55,71 +56,85 @@ struct usb_handle
     int bulk_in;  /* "in" from the host's perspective => sink for adbd */
 };
 
-static const struct {
-    struct usb_functionfs_descs_head header;
-    struct {
-        struct usb_interface_descriptor intf;
-        struct usb_endpoint_descriptor_no_audio source;
-        struct usb_endpoint_descriptor_no_audio sink;
-    } __attribute__((packed)) fs_descs, hs_descs;
-} __attribute__((packed)) descriptors = {
-    .header = {
-        .magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC),
-        .length = cpu_to_le32(sizeof(descriptors)),
-        .fs_count = 3,
-        .hs_count = 3,
+struct func_desc {
+    struct usb_interface_descriptor intf;
+    struct usb_endpoint_descriptor_no_audio source;
+    struct usb_endpoint_descriptor_no_audio sink;
+} __attribute__((packed));
+
+struct desc_v1 {
+    struct usb_functionfs_descs_head_v1 {
+        __le32 magic;
+        __le32 length;
+        __le32 fs_count;
+        __le32 hs_count;
+    } __attribute__((packed)) header;
+    struct func_desc fs_descs, hs_descs;
+} __attribute__((packed));
+
+struct desc_v2 {
+    struct usb_functionfs_descs_head_v2 {
+        __le32 magic;
+        __le32 length;
+        __le32 flags;
+        __le32 fs_count;
+        __le32 hs_count;
+        __le32 ss_count;
+    } __attribute__((packed)) header;
+    struct func_desc fs_descs, hs_descs;
+} __attribute__((packed));
+
+struct func_desc fs_descriptors = {
+    .intf = {
+        .bLength = sizeof(fs_descriptors.intf),
+        .bDescriptorType = USB_DT_INTERFACE,
+        .bInterfaceNumber = 0,
+        .bNumEndpoints = 2,
+        .bInterfaceClass = ADB_CLASS,
+        .bInterfaceSubClass = ADB_SUBCLASS,
+        .bInterfaceProtocol = ADB_PROTOCOL,
+        .iInterface = 1, /* first string from the provided table */
     },
-    .fs_descs = {
-        .intf = {
-            .bLength = sizeof(descriptors.fs_descs.intf),
-            .bDescriptorType = USB_DT_INTERFACE,
-            .bInterfaceNumber = 0,
-            .bNumEndpoints = 2,
-            .bInterfaceClass = ADB_CLASS,
-            .bInterfaceSubClass = ADB_SUBCLASS,
-            .bInterfaceProtocol = ADB_PROTOCOL,
-            .iInterface = 1, /* first string from the provided table */
-        },
-        .source = {
-            .bLength = sizeof(descriptors.fs_descs.source),
-            .bDescriptorType = USB_DT_ENDPOINT,
-            .bEndpointAddress = 1 | USB_DIR_OUT,
-            .bmAttributes = USB_ENDPOINT_XFER_BULK,
-            .wMaxPacketSize = MAX_PACKET_SIZE_FS,
-        },
-        .sink = {
-            .bLength = sizeof(descriptors.fs_descs.sink),
-            .bDescriptorType = USB_DT_ENDPOINT,
-            .bEndpointAddress = 2 | USB_DIR_IN,
-            .bmAttributes = USB_ENDPOINT_XFER_BULK,
-            .wMaxPacketSize = MAX_PACKET_SIZE_FS,
-        },
+    .source = {
+        .bLength = sizeof(fs_descriptors.source),
+        .bDescriptorType = USB_DT_ENDPOINT,
+        .bEndpointAddress = 1 | USB_DIR_OUT,
+        .bmAttributes = USB_ENDPOINT_XFER_BULK,
+        .wMaxPacketSize = MAX_PACKET_SIZE_FS,
     },
-    .hs_descs = {
-        .intf = {
-            .bLength = sizeof(descriptors.hs_descs.intf),
-            .bDescriptorType = USB_DT_INTERFACE,
-            .bInterfaceNumber = 0,
-            .bNumEndpoints = 2,
-            .bInterfaceClass = ADB_CLASS,
-            .bInterfaceSubClass = ADB_SUBCLASS,
-            .bInterfaceProtocol = ADB_PROTOCOL,
-            .iInterface = 1, /* first string from the provided table */
-        },
-        .source = {
-            .bLength = sizeof(descriptors.hs_descs.source),
-            .bDescriptorType = USB_DT_ENDPOINT,
-            .bEndpointAddress = 1 | USB_DIR_OUT,
-            .bmAttributes = USB_ENDPOINT_XFER_BULK,
-            .wMaxPacketSize = MAX_PACKET_SIZE_HS,
-        },
-        .sink = {
-            .bLength = sizeof(descriptors.hs_descs.sink),
-            .bDescriptorType = USB_DT_ENDPOINT,
-            .bEndpointAddress = 2 | USB_DIR_IN,
-            .bmAttributes = USB_ENDPOINT_XFER_BULK,
-            .wMaxPacketSize = MAX_PACKET_SIZE_HS,
-        },
+    .sink = {
+        .bLength = sizeof(fs_descriptors.sink),
+        .bDescriptorType = USB_DT_ENDPOINT,
+        .bEndpointAddress = 2 | USB_DIR_IN,
+        .bmAttributes = USB_ENDPOINT_XFER_BULK,
+        .wMaxPacketSize = MAX_PACKET_SIZE_FS,
+    },
+};
+
+struct func_desc hs_descriptors = {
+    .intf = {
+        .bLength = sizeof(hs_descriptors.intf),
+        .bDescriptorType = USB_DT_INTERFACE,
+        .bInterfaceNumber = 0,
+        .bNumEndpoints = 2,
+        .bInterfaceClass = ADB_CLASS,
+        .bInterfaceSubClass = ADB_SUBCLASS,
+        .bInterfaceProtocol = ADB_PROTOCOL,
+        .iInterface = 1, /* first string from the provided table */
+    },
+    .source = {
+        .bLength = sizeof(hs_descriptors.source),
+        .bDescriptorType = USB_DT_ENDPOINT,
+        .bEndpointAddress = 1 | USB_DIR_OUT,
+        .bmAttributes = USB_ENDPOINT_XFER_BULK,
+        .wMaxPacketSize = MAX_PACKET_SIZE_HS,
+    },
+    .sink = {
+        .bLength = sizeof(hs_descriptors.sink),
+        .bDescriptorType = USB_DT_ENDPOINT,
+        .bEndpointAddress = 2 | USB_DIR_IN,
+        .bmAttributes = USB_ENDPOINT_XFER_BULK,
+        .wMaxPacketSize = MAX_PACKET_SIZE_HS,
     },
 };
 
@@ -263,24 +278,47 @@ static void usb_adb_init()
 static void init_functionfs(struct usb_handle *h)
 {
     ssize_t ret;
+    struct desc_v1 v1_descriptor;
+    struct desc_v2 v2_descriptor;
 
-    D("OPENING %s\n", USB_FFS_ADB_EP0);
-    h->control = adb_open(USB_FFS_ADB_EP0, O_RDWR);
-    if (h->control < 0) {
-        D("[ %s: cannot open control endpoint: errno=%d]\n", USB_FFS_ADB_EP0, errno);
-        goto err;
-    }
+    v2_descriptor.header.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC_V2);
+    v2_descriptor.header.length = cpu_to_le32(sizeof(v2_descriptor));
+    v2_descriptor.header.flags = FUNCTIONFS_HAS_FS_DESC | FUNCTIONFS_HAS_HS_DESC;
+    v2_descriptor.header.fs_count = 3;
+    v2_descriptor.header.hs_count = 3;
+    v2_descriptor.header.ss_count = 0;
+    v2_descriptor.fs_descs = fs_descriptors;
+    v2_descriptor.hs_descs = hs_descriptors;
 
-    ret = adb_write(h->control, &descriptors, sizeof(descriptors));
-    if (ret < 0) {
-        D("[ %s: write descriptors failed: errno=%d ]\n", USB_FFS_ADB_EP0, errno);
-        goto err;
-    }
+    if (h->control < 0) { // might have already done this before
+        D("OPENING %s\n", USB_FFS_ADB_EP0);
+        h->control = adb_open(USB_FFS_ADB_EP0, O_RDWR);
+        if (h->control < 0) {
+            D("[ %s: cannot open control endpoint: errno=%d]\n", USB_FFS_ADB_EP0, errno);
+            goto err;
+        }
 
-    ret = adb_write(h->control, &strings, sizeof(strings));
-    if (ret < 0) {
-        D("[ %s: writing strings failed: errno=%d]\n", USB_FFS_ADB_EP0, errno);
-        goto err;
+        ret = adb_write(h->control, &v2_descriptor, sizeof(v2_descriptor));
+        if (ret < 0) {
+            v1_descriptor.header.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC);
+            v1_descriptor.header.length = cpu_to_le32(sizeof(v1_descriptor));
+            v1_descriptor.header.fs_count = 3;
+            v1_descriptor.header.hs_count = 3;
+            v1_descriptor.fs_descs = fs_descriptors;
+            v1_descriptor.hs_descs = hs_descriptors;
+            D("[ %s: Switching to V1_descriptor format errno=%d ]\n", USB_FFS_ADB_EP0, errno);
+            ret = adb_write(h->control, &v1_descriptor, sizeof(v1_descriptor));
+            if (ret < 0) {
+                D("[ %s: write descriptors failed: errno=%d ]\n", USB_FFS_ADB_EP0, errno);
+                goto err;
+            }
+        }
+
+        ret = adb_write(h->control, &strings, sizeof(strings));
+        if (ret < 0) {
+            D("[ %s: writing strings failed: errno=%d]\n", USB_FFS_ADB_EP0, errno);
+            goto err;
+        }
     }
 
     h->bulk_out = adb_open(USB_FFS_ADB_OUT, O_RDWR);
@@ -320,14 +358,14 @@ static void *usb_ffs_open_thread(void *x)
     while (1) {
         // wait until the USB device needs opening
         adb_mutex_lock(&usb->lock);
-        while (usb->control != -1)
+        while (usb->control != -1 && usb->bulk_in != -1 && usb->bulk_out != -1)
             adb_cond_wait(&usb->notify, &usb->lock);
         adb_mutex_unlock(&usb->lock);
 
         while (1) {
             init_functionfs(usb);
 
-            if (usb->control >= 0)
+            if (usb->control >= 0 && usb->bulk_in >= 0 && usb->bulk_out >= 0)
                 break;
 
             adb_sleep_ms(1000);
@@ -384,7 +422,7 @@ static int bulk_read(int bulk_out, char *buf, size_t length)
         ret = adb_read(bulk_out, buf + count, length - count);
         if (ret < 0) {
             if (errno != EINTR) {
-                D("[ bulk_read failed fd=%d length=%d count=%d ]\n",
+                D("[ bulk_read failed fd=%d length=%zu count=%zu ]\n",
                                            bulk_out, length, count);
                 return ret;
             }
@@ -424,10 +462,13 @@ static void usb_ffs_kick(usb_handle *h)
         D("[ kick: sink (fd=%d) clear halt failed (%d) ]", h->bulk_out, errno);
 
     adb_mutex_lock(&h->lock);
-    adb_close(h->control);
+
+    // don't close ep0 here, since we may not need to reinitialize it with
+    // the same descriptors again. if however ep1/ep2 fail to re-open in
+    // init_functionfs, only then would we close and open ep0 again.
     adb_close(h->bulk_out);
     adb_close(h->bulk_in);
-    h->control = h->bulk_out = h->bulk_in = -1;
+    h->bulk_out = h->bulk_in = -1;
 
     // notify usb_ffs_open_thread that we are disconnected
     adb_cond_signal(&h->notify);

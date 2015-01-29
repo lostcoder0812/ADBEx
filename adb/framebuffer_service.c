@@ -55,7 +55,7 @@ struct fbinfo {
 void framebuffer_service(int fd, void *cookie)
 {
     struct fbinfo fbinfo;
-    unsigned int i;
+    unsigned int i, bsize;
     char buf[640];
     int fd_screencap;
     int w, h, f;
@@ -76,6 +76,7 @@ void framebuffer_service(int fd, void *cookie)
         exit(1);
     }
 
+    close(fds[1]);
     fd_screencap = fds[0];
 
     /* read w, h & format */
@@ -164,17 +165,20 @@ void framebuffer_service(int fd, void *cookie)
     if(writex(fd, &fbinfo, sizeof(fbinfo))) goto done;
 
     /* write data */
-    for(i = 0; i < fbinfo.size; i += sizeof(buf)) {
-      if(readx(fd_screencap, buf, sizeof(buf))) goto done;
-      if(writex(fd, buf, sizeof(buf))) goto done;
+    for(i = 0; i < fbinfo.size; i += bsize) {
+      bsize = sizeof(buf);
+      /*if (i + bsize > fbinfo.size)
+        bsize = fbinfo.size - i;*/
+      if(readx(fd_screencap, buf, bsize)) goto done;
+      if(writex(fd, buf, bsize)) goto done;
     }
     if(readx(fd_screencap, buf, fbinfo.size % sizeof(buf))) goto done;
     if(writex(fd, buf, fbinfo.size % sizeof(buf))) goto done;
 
 done:
-    TEMP_FAILURE_RETRY(waitpid(pid, NULL, 0));
-
     close(fds[0]);
-    close(fds[1]);
+
+    TEMP_FAILURE_RETRY(waitpid(pid, NULL, 0));
+//pipefail:
     close(fd);
 }

@@ -1,8 +1,9 @@
 #include "sysdeps.h"
 #include <win32_adb.h>
-#include <windows.h>
 #include <winsock2.h>
+#include <windows.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
 #define  TRACE_TAG  TRACE_SYSDEPS
 #include "adb.h"
@@ -94,19 +95,19 @@ typedef struct SocketPairRec_*  SocketPair;
 
 typedef struct FHRec_
 {
-	FHClass    clazz;
-	int        used;
-	int        eof;
-	union {
-		HANDLE      handle;
-		SOCKET      socket;
-		SocketPair  pair;
-	} u;
+    FHClass    clazz;
+    int        used;
+    int        eof;
+    union {
+        HANDLE      handle;
+        SOCKET      socket;
+        SocketPair  pair;
+    } u;
 
-	HANDLE    event;
-	int       mask;
+    HANDLE    event;
+    int       mask;
 
-	char  name[32];
+    char  name[32];
 
 } FHRec;
 
@@ -515,7 +516,7 @@ _fh_socket_lseek( FH  f, int pos, int origin )
 static int
 _fh_socket_read( FH  f, void*  buf, int  len )
 {
-    int  result = recv( f->fh_socket, (char*)buf, len, 0 );
+    int  result = recv( f->fh_socket, buf, len, 0 );
     if (result == SOCKET_ERROR) {
         _socket_set_errno();
         result = -1;
@@ -526,7 +527,7 @@ _fh_socket_read( FH  f, void*  buf, int  len )
 static int
 _fh_socket_write( FH  f, const void*  buf, int  len )
 {
-    int  result = send( f->fh_socket, (const char*)buf, len, 0 );
+    int  result = send( f->fh_socket, buf, len, 0 );
     if (result == SOCKET_ERROR) {
         _socket_set_errno();
         result = -1;
@@ -703,6 +704,13 @@ int socket_network_client(const char *host, int port, int type)
 }
 
 
+int socket_network_client_timeout(const char *host, int port, int type, int timeout)
+{
+    // TODO: implement timeouts for Windows.
+    return socket_network_client(host, port, type);
+}
+
+
 int socket_inaddr_any_server(int port, int type)
 {
     FH  f = _fh_alloc( &_fh_socket_class );
@@ -783,7 +791,7 @@ int  adb_socket_accept(int  serverfd, struct sockaddr*  addr, socklen_t  *addrle
 void  disable_tcp_nagle(int fd)
 {
     FH   fh = _fh_from_int(fd);
-    int  on;
+    int  on = 1;
 
     if ( !fh || fh->clazz != &_fh_socket_class )
         return;
@@ -915,9 +923,8 @@ bip_buffer_done( BipBuffer  bip )
 }
 
 static int
-bip_buffer_write( BipBuffer  bip, const void* _src, int  len )
+bip_buffer_write( BipBuffer  bip, const void* src, int  len )
 {
-	const char* src = (const char*)_src;
     int  avail, count = 0;
 
     if (len <= 0)
@@ -959,7 +966,7 @@ bip_buffer_write( BipBuffer  bip, const void* _src, int  len )
             avail = len;
 
         memcpy( bip->buff + bip->a_end, src, avail );
-        src   += avail;
+        src   = (const char *)src + avail;
         count += avail;
         len   -= avail;
 
@@ -1005,10 +1012,8 @@ Exit:
  }
 
 static int
-bip_buffer_read( BipBuffer  bip, void*  _dst, int  len )
+bip_buffer_read( BipBuffer  bip, void*  dst, int  len )
 {
-	char* dst = (char*)_dst;
-
     int  avail, count = 0;
 
     if (len <= 0)
@@ -1054,7 +1059,7 @@ bip_buffer_read( BipBuffer  bip, void*  _dst, int  len )
         avail = len;
 
     memcpy( dst, bip->buff + bip->a_start, avail );
-    dst   += avail;
+    dst   = (char *)dst + avail;
     count += avail;
     len   -= avail;
 
@@ -1202,7 +1207,7 @@ int  adb_socketpair( int  sv[2] )
     if (!fa || !fb)
         goto Fail;
 
-    pair = (SocketPair)malloc( sizeof(*pair) );
+    pair = malloc( sizeof(*pair) );
     if (pair == NULL) {
         D("adb_socketpair: not enough memory to allocate pipes\n" );
         goto Fail;
@@ -1274,7 +1279,7 @@ static fdevent *fdevent_plist_dequeue(void);
 
 static fdevent list_pending = {
     &list_pending,
-    &list_pending
+    &list_pending,
 };
 
 static fdevent **fd_table = 0;
@@ -1306,7 +1311,7 @@ event_hook_alloc( FH  fh )
     if (hook != NULL)
         _free_hooks = hook->next;
     else {
-        hook = (EventHook)malloc( sizeof(*hook) );
+        hook = malloc( sizeof(*hook) );
         if (hook == NULL)
             fatal( "could not allocate event hook\n" );
     }
@@ -1547,7 +1552,7 @@ _wait_for_all(HANDLE* handles, int handles_count)
      * reset" event that will remain set once it was set. */
     main_event = CreateEvent(NULL, TRUE, FALSE, NULL);
     if (main_event == NULL) {
-        D("Unable to create main event. Error: %d", GetLastError());
+        D("Unable to create main event. Error: %d", (int)GetLastError());
         free(threads);
         return (int)WAIT_FAILED;
     }
@@ -1768,7 +1773,7 @@ static void fdevent_register(fdevent *fde)
         while(fd_table_max <= fd) {
             fd_table_max *= 2;
         }
-        fd_table = (fdevent **)realloc(fd_table, sizeof(fdevent*) * fd_table_max);
+        fd_table = realloc(fd_table, sizeof(fdevent*) * fd_table_max);
         if(fd_table == 0) {
             FATAL("could not expand fd_table to %d entries\n", fd_table_max);
         }
