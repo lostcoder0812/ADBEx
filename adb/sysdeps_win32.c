@@ -1,4 +1,5 @@
 #include "sysdeps.h"
+#include <win32_adb.h>
 #include <winsock2.h>
 #include <windows.h>
 #include <stdio.h>
@@ -6,6 +7,7 @@
 #include <errno.h>
 #define  TRACE_TAG  TRACE_SYSDEPS
 #include "adb.h"
+#include <malloc.h>
 
 extern void fatal(const char *fmt, ...);
 
@@ -200,8 +202,8 @@ _fh_close( FH   f )
 }
 
 /* forward definitions */
-static const FHClassRec   _fh_file_class;
-static const FHClassRec   _fh_socket_class;
+//static const FHClassRec   _fh_file_class;
+//static const FHClassRec   _fh_socket_class;
 
 /**************************************************************************/
 /**************************************************************************/
@@ -1249,7 +1251,7 @@ Fail:
 /**************************************************************************/
 /**************************************************************************/
 
-#define FATAL(x...) fatal(__FUNCTION__, x)
+#define FATAL(x, ...) fatal(x, __FUNCTION__, __VA_ARGS__)
 
 #if DEBUG
 static void dump_fde(fdevent *fde, const char *info)
@@ -1276,8 +1278,8 @@ static void fdevent_plist_remove(fdevent *node);
 static fdevent *fdevent_plist_dequeue(void);
 
 static fdevent list_pending = {
-    .next = &list_pending,
-    .prev = &list_pending,
+    &list_pending,
+    &list_pending,
 };
 
 static fdevent **fd_table = 0;

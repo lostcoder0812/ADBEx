@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#include <stddef.h>
+//#include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
+//#include <unistd.h>
 #include <string.h>
 #include <errno.h>
 
@@ -38,6 +38,11 @@
 #  include <cutils/properties.h>
 #endif
 
+#if _WIN32
+#	include <cutils/android_reboot.h>
+#	include <cutils/properties.h>
+#endif
+
 typedef struct stinfo stinfo;
 
 struct stinfo {
@@ -55,7 +60,60 @@ void *service_bootstrap_func(void *x)
     return 0;
 }
 
-#if !ADB_HOST
+#if ADB_HOST
+
+ADB_MUTEX_DEFINE( dns_lock );
+
+static void dns_service(int fd, void *cookie)
+{
+    char *hostname = (char *)cookie;
+    struct hostent *hp;
+    unsigned zero = 0;
+
+    adb_mutex_lock(&dns_lock);
+    hp = gethostbyname(hostname);
+    free(cookie);
+    if(hp == 0) {
+        writex(fd, &zero, 4);
+    } else {
+        writex(fd, hp->h_addr, 4);
+    }
+    adb_mutex_unlock(&dns_lock);
+    adb_close(fd);
+}
+#else
+extern int recovery_mode;
+
+static void recover_service(int s, void *cookie)
+{
+    unsigned char buf[4096];
+    unsigned count = (unsigned) cookie;
+    int fd;
+
+    fd = adb_creat("/tmp/update", 0644);
+    if(fd < 0) {
+        adb_close(s);
+        return;
+    }
+
+    while(count > 0) {
+        unsigned xfer = (count > 4096) ? 4096 : count;
+        if(readx(s, buf, xfer)) break;
+        if(writex(fd, buf, xfer)) break;
+        count -= xfer;
+    }
+
+    if(count == 0) {
+        writex(s, "OKAY", 4);
+    } else {
+        writex(s, "FAIL", 4);
+    }
+    adb_close(fd);
+    adb_close(s);
+
+    fd = adb_creat("/tmp/update.begin", 0644);
+    adb_close(fd);
+}
 
 void restart_root_service(int fd, void *cookie)
 {
@@ -115,33 +173,39 @@ void restart_usb_service(int fd, void *cookie)
 void reboot_service(int fd, void *arg)
 {
     char buf[100];
-    char property_val[PROPERTY_VALUE_MAX];
-    int ret;
+    //char property_val[PROPERTY_VALUE_MAX];
+    int pid, ret;
 
     sync();
 
-    ret = snprintf(property_val, sizeof(property_val), "reboot,%s", (char *) arg);
-    if (ret >= (int) sizeof(property_val)) {
-        snprintf(buf, sizeof(buf), "reboot string too long. length=%d\n", ret);
-        writex(fd, buf, strlen(buf));
-        goto cleanup;
+    /* Attempt to unmount the SD card first.
+     * No need to bother checking for errors.
+     */
+    pid = fork();
+    if (pid == 0) {
+        /* ask vdc to unmount it */
+        execl("/system/bin/vdc", "/system/bin/vdc", "volume", "unmount",
+                getenv("EXTERNAL_STORAGE"), "force", NULL);
+    } else if (pid > 0) {
+        /* wait until vdc succeeds or fails */
+        waitpid(pid, &ret, 0);
     }
 
-    ret = property_set(ANDROID_RB_PROPERTY, property_val);
+    ret = android_reboot(ANDROID_RB_RESTART2, 0, (char *) arg);
     if (ret < 0) {
-        snprintf(buf, sizeof(buf), "reboot failed: %d\n", ret);
+        snprintf(buf, sizeof(buf), "reboot failed: %s\n", strerror(errno));
         writex(fd, buf, strlen(buf));
-        goto cleanup;
+        //goto cleanup;
     }
     // Don't return early. Give the reboot command time to take effect
     // to avoid messing up scripts which do "adb reboot && adb wait-for-device"
-    while(1) { pause(); }
-cleanup:
+    //while(1) { pause(); }
+//cleanup:
     free(arg);
     adb_close(fd);
 }
 
-void reverse_service(int fd, void* arg)
+/*void reverse_service(int fd, void* arg)
 {
     const char* command = arg;
 
@@ -150,7 +214,7 @@ void reverse_service(int fd, void* arg)
     }
     free(arg);
     adb_close(fd);
-}
+}*/
 
 #endif
 
@@ -186,7 +250,7 @@ static int create_service_thread(void (*func)(int, void *), void *cookie)
 
 #if !ADB_HOST
 
-static void init_subproc_child()
+/*static void init_subproc_child()
 {
     setsid();
 
@@ -198,7 +262,7 @@ static void init_subproc_child()
     } else {
        D("adb: unable to update oom_score_adj\n");
     }
-}
+}*/
 
 static int create_subproc_pty(const char *cmd, const char *arg0, const char *arg1, pid_t *pid)
 {
@@ -397,7 +461,9 @@ int service_to_fd(const char *name)
                 disable_tcp_nagle(ret);
         } else {
 #if ADB_HOST
+            adb_mutex_lock(&dns_lock);
             ret = socket_network_client(name + 1, port, SOCK_STREAM);
+            adb_mutex_lock(&dns_lock);
 #else
             return -1;
 #endif
@@ -511,7 +577,7 @@ static void wait_for_state(int fd, void* cookie)
     D("wait_for_state is done\n");
 }
 
-static void connect_device(char* host, char* buffer, int buffer_size)
+/*static void connect_device(char* host, char* buffer, int buffer_size)
 {
     int port, fd;
     char* portstr = strchr(host, ':');
@@ -576,7 +642,7 @@ void connect_emulator(char* port_spec, char* buffer, int buffer_size)
                 "Invalid port numbers: Expected positive numbers, got '%s'",
                 port_spec);
         return;
-    }
+    }*/
 
     /* Check if the emulator is already known.
      * Note: There's a small but harmless race condition here: An emulator not
@@ -585,23 +651,23 @@ void connect_emulator(char* port_spec, char* buffer, int buffer_size)
      * against double-registration too. From here, a better error message
      * can be produced. In the case of the race condition, the very specific
      * error message won't be shown, but the data doesn't get corrupted. */
-    atransport* known_emulator = find_emulator_transport_by_adb_port(adb_port);
+    /*atransport* known_emulator = find_emulator_transport_by_adb_port(adb_port);
     if (known_emulator != NULL) {
         snprintf(buffer, buffer_size,
                 "Emulator on port %d already registered.", adb_port);
         return;
-    }
+    }*/
 
     /* Check if more emulators can be registered. Similar unproblematic
      * race condition as above. */
-    int candidate_slot = get_available_local_transport_index();
+    /*int candidate_slot = get_available_local_transport_index();
     if (candidate_slot < 0) {
         snprintf(buffer, buffer_size, "Cannot accept more emulators.");
         return;
-    }
+    }*/
 
     /* Preconditions met, try to connect to the emulator. */
-    if (!local_connect_arbitrary_ports(console_port, adb_port)) {
+    /*if (!local_connect_arbitrary_ports(console_port, adb_port)) {
         snprintf(buffer, buffer_size,
                 "Connected to emulator on ports %d,%d", console_port, adb_port);
     } else {
@@ -609,9 +675,9 @@ void connect_emulator(char* port_spec, char* buffer, int buffer_size)
                 "Could not connect to emulator on ports %d,%d",
                 console_port, adb_port);
     }
-}
+}*/
 
-static void connect_service(int fd, void* cookie)
+/*static void connect_service(int fd, void* cookie)
 {
     char buf[4096];
     char resp[4096];
@@ -627,7 +693,7 @@ static void connect_service(int fd, void* cookie)
     snprintf(resp, sizeof(resp), "%04x%s",(unsigned)strlen(buf), buf);
     writex(fd, resp, strlen(resp));
     adb_close(fd);
-}
+}*/
 #endif
 
 #if ADB_HOST
@@ -661,10 +727,10 @@ asocket*  host_service_to_socket(const char*  name, const char *serial)
 
         int fd = create_service_thread(wait_for_state, sinfo);
         return create_local_socket(fd);
-    } else if (!strncmp(name, "connect:", 8)) {
+    /*} else if (!strncmp(name, "connect:", 8)) {
         const char *host = name + 8;
         int fd = create_service_thread(connect_service, (void *)host);
-        return create_local_socket(fd);
+        return create_local_socket(fd);*/
     }
     return NULL;
 }

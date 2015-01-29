@@ -36,9 +36,9 @@ int adb_auth_sign(void *key, void *token, size_t token_size, void *sig);
 void *adb_auth_nextkey(void *current);
 int adb_auth_get_userkey(unsigned char *data, size_t len);
 
-static inline int adb_auth_generate_token(void *token, size_t token_size) { return 0; }
-static inline int adb_auth_verify(void *token, void *sig, int siglen) { return 0; }
-static inline void adb_auth_confirm_key(unsigned char *data, size_t len, atransport *t) { }
+static __inline int adb_auth_generate_token(void *token, size_t token_size) { return 0; }
+static __inline int adb_auth_verify(void *token, void *sig, int siglen) { return 0; }
+static __inline void adb_auth_confirm_key(unsigned char *data, size_t len, atransport *t) { }
 
 #else // !ADB_HOST
 

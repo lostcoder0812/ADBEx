@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <sysdeps.h>
+#include "sysdeps.h"
 
 #define  TRACE_TAG  TRACE_TRANSPORT
 #include "adb.h"

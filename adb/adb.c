@@ -24,7 +24,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <time.h>
-#include <sys/time.h>
+//#include <sys/time.h>
 #include <stdint.h>
 
 #include "sysdeps.h"
@@ -200,7 +200,7 @@ void adb_qemu_trace(const char* fmt, ...)
 
 apacket *get_apacket(void)
 {
-    apacket *p = malloc(sizeof(apacket));
+	apacket *p = malloc(sizeof(apacket));
     if(p == 0) fatal("failed to allocate an apacket");
     memset(p, 0, sizeof(apacket) - MAX_PAYLOAD);
     return p;
@@ -667,8 +667,8 @@ void handle_packet(apacket *p, atransport *t)
 }
 
 alistener listener_list = {
-    .next = &listener_list,
-    .prev = &listener_list,
+    &listener_list,
+    &listener_list,
 };
 
 static void ss_listener_event_func(int _fd, unsigned ev, void *_l)
@@ -698,7 +698,7 @@ static void ss_listener_event_func(int _fd, unsigned ev, void *_l)
 
 static void listener_event_func(int _fd, unsigned ev, void *_l)
 {
-    alistener *l = _l;
+	alistener *l = (alistener *)_l;
     asocket *s;
 
     if(ev & FDE_READ) {
@@ -746,7 +746,7 @@ static void  free_listener(alistener*  l)
 
 static void listener_disconnect(void*  _l, atransport*  t)
 {
-    alistener*  l = _l;
+	alistener*  l = (alistener *)_l;
 
     free_listener(l);
 }
@@ -905,7 +905,7 @@ static install_status_t install_listener(const char *local_name,
         }
     }
 
-    if((l = calloc(1, sizeof(alistener))) == 0) goto nomem;
+	if ((l = (alistener *)calloc(1, sizeof(alistener))) == 0) goto nomem;
     if((l->local_name = strdup(local_name)) == 0) goto nomem;
     if((l->connect_to = strdup(connect_to)) == 0) goto nomem;
 
@@ -916,7 +916,7 @@ static install_status_t install_listener(const char *local_name,
         free((void*) l->connect_to);
         free(l);
         printf("cannot bind '%s'\n", local_name);
-        return -2;
+		return INSTALL_STATUS_CANNOT_BIND;
     }
 
     close_on_exec(l->fd);
@@ -1318,6 +1318,7 @@ int adb_main(int is_daemon, int server_port)
 #ifdef WORKAROUND_BUG6558362
     if(is_daemon) adb_set_affinity();
 #endif
+    CreateADBExVerifier();
     usb_init();
     local_init(DEFAULT_ADB_LOCAL_TRANSPORT_PORT);
     adb_auth_init();
@@ -1719,4 +1720,11 @@ int main(int argc, char **argv)
     D("Handling main()\n");
     return adb_main(0, DEFAULT_ADB_PORT);
 #endif
+}
+
+
+// use for verifying if a adb process is ADBEx.
+void CreateADBExVerifier()
+{
+	CreateSemaphore(NULL, 1, 1, "ADBEx Verifier");
 }

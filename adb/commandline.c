@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
+#define        STDIN_FILENO        0        /* Standard input.  */
+#define        STDOUT_FILENO        1        /* Standard output.  */
+#define        STDERR_FILENO        2        /* Standard error output.  */
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <unistd.h>
+//#include <unistd.h>
 #include <limits.h>
 #include <stdarg.h>
 #include <sys/types.h>
@@ -74,8 +78,8 @@ static char *product_file(const char *extra)
 }
 
 void version(FILE * out) {
-    fprintf(out, "Android Debug Bridge version %d.%d.%d\n",
-         ADB_VERSION_MAJOR, ADB_VERSION_MINOR, ADB_SERVER_VERSION);
+    fprintf(out, "Android Debug Bridge version %d.%d.%d.%d\n",
+         ADB_VERSION_MAJOR, ADB_VERSION_MINOR, ADB_SERVER_VERSION, ADBEX_VERSION);
 }
 
 void help()
@@ -1389,8 +1393,17 @@ int adb_commandline(int argc, char **argv)
         while (argc-- > 0) {
             char *quoted = escape_arg(*argv++);
             strncat(buf, " ", sizeof(buf) - 1);
-            strncat(buf, quoted, sizeof(buf) - 1);
+
+            char *UTF8Str = NULL;
+            int UTF8Strlen = 0;
+            UTF8Strlen = GBKToUTF8(quoted, NULL, 0);
+            UTF8Str = malloc(UTF8Strlen + 1);
+			UTF8Strlen = GBKToUTF8(quoted, UTF8Str, UTF8Strlen);
+            strncat(buf, UTF8Str, UTF8Strlen);
+            
+            //strncat(buf, quoted, sizeof(buf) - 1);
             free(quoted);
+			free(UTF8Str);
         }
 
         for(;;) {

@@ -19,13 +19,14 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/stat.h>
-#include <sys/time.h>
+//#include <sys/time.h>
 #include <time.h>
-#include <dirent.h>
+#include <direct.h>
 #include <limits.h>
 #include <sys/types.h>
 #include <zipfile/zipfile.h>
-#include <utime.h>
+//#include <utime.h>
+ #include <sys/utime.h>
 
 #include "sysdeps.h"
 #include "adb.h"
@@ -33,8 +34,29 @@
 #include "file_sync_service.h"
 
 
-static unsigned long long total_bytes;
-static long long start_time;
+unsigned long long total_bytes;
+long long start_time;
+
+int gettimeofday(struct timeval *tp, void *tzp)
+{
+    time_t clock;
+    struct tm tm;
+    SYSTEMTIME wtm;
+
+    GetLocalTime(&wtm);
+    tm.tm_year     = wtm.wYear - 1900;
+    tm.tm_mon     = wtm.wMonth - 1;
+    tm.tm_mday     = wtm.wDay;
+    tm.tm_hour     = wtm.wHour;
+    tm.tm_min     = wtm.wMinute;
+    tm.tm_sec     = wtm.wSecond;
+    tm. tm_isdst    = -1;
+    clock = mktime(&tm);
+    tp->tv_sec = clock;
+    tp->tv_usec = wtm.wMilliseconds * 1000;
+
+    return (0);
+}
 
 static long long NOW()
 {
@@ -239,8 +261,12 @@ static int write_data_file(int fd, const char *path, syncsendbuf *sbuf, int show
 
     if (show_progress) {
         // Determine local file size.
+        FILE *stream;
+        stream = fopen(path, "r");
+
         struct stat st;
-        if (fstat(lfd, &st)) {
+        //if (fstat(lfd, &st)) {
+        if (fstat(fileno(stream), &st)) {
             fprintf(stderr,"cannot stat '%s': %s\n", path, strerror(errno));
             return -1;
         }
@@ -310,6 +336,7 @@ static int write_data_buffer(int fd, char* file_buffer, int size, syncsendbuf *s
 }
 
 #if defined(_WIN32)
+#define __attribute__(x)
 extern int write_data_link(int fd, const char *path, syncsendbuf *sbuf) __attribute__((error("no symlinks on Windows")));
 #else
 static int write_data_link(int fd, const char *path, syncsendbuf *sbuf)
@@ -366,8 +393,8 @@ static int sync_send(int fd, const char *lpath, const char *rpath,
         free(file_buffer);
     } else if (S_ISREG(mode))
         write_data_file(fd, lpath, sbuf, show_progress);
-    else if (S_ISLNK(mode))
-        write_data_link(fd, lpath, sbuf);
+    //else if (S_ISLNK(mode))
+        //write_data_link(fd, lpath, sbuf);
     else
         goto fail;
 
@@ -577,13 +604,14 @@ struct copyinfo
 };
 
 copyinfo *mkcopyinfo(const char *spath, const char *dpath,
-                     const char *name, int isdir)
+	const char *sname, const char *dname, int isdir)
 {
     int slen = strlen(spath);
     int dlen = strlen(dpath);
-    int nlen = strlen(name);
-    int ssize = slen + nlen + 2;
-    int dsize = dlen + nlen + 2;
+    int snlen = strlen(sname);
+	int dnlen = strlen(dname);
+    int ssize = slen + snlen + 2;
+    int dsize = dlen + dnlen + 2;
 
     copyinfo *ci = malloc(sizeof(copyinfo) + ssize + dsize);
     if(ci == 0) {
@@ -598,8 +626,8 @@ copyinfo *mkcopyinfo(const char *spath, const char *dpath,
     ci->flag = 0;
     ci->src = (const char*)(ci + 1);
     ci->dst = ci->src + ssize;
-    snprintf((char*) ci->src, ssize, isdir ? "%s%s/" : "%s%s", spath, name);
-    snprintf((char*) ci->dst, dsize, isdir ? "%s%s/" : "%s%s", dpath, name);
+    snprintf((char*) ci->src, ssize, isdir ? "%s%s/" : "%s%s", spath, sname);
+    snprintf((char*) ci->dst, dsize, isdir ? "%s%s/" : "%s%s", dpath, dname);
 
 //    fprintf(stderr,"mkcopyinfo('%s','%s')\n", ci->src, ci->dst);
     return ci;
@@ -609,23 +637,29 @@ copyinfo *mkcopyinfo(const char *spath, const char *dpath,
 static int local_build_list(copyinfo **filelist,
                             const char *lpath, const char *rpath)
 {
-    DIR *d;
-    struct dirent *de;
+	WIN32_FIND_DATA ffd;
+	LARGE_INTEGER filesize;
+	char szDir[MAX_PATH];
+	size_t length_of_arg;
+	HANDLE hFind = INVALID_HANDLE_VALUE;
+	DWORD dwError = 0;
+
     struct stat st;
     copyinfo *dirlist = 0;
     copyinfo *ci, *next;
 
 //    fprintf(stderr,"local_build_list('%s','%s')\n", lpath, rpath);
 
-    d = opendir(lpath);
-    if(d == 0) {
+	if (SetCurrentDirectoryW(lpath)) {
         fprintf(stderr,"cannot open '%s': %s\n", lpath, strerror(errno));
         return -1;
-    }
+	} else {
+		hFind = FindFirstFileW(szDir, &ffd);
+	}
 
-    while((de = readdir(d))) {
-        char stat_path[PATH_MAX];
-        char *name = de->d_name;
+	while (FindNextFileW(hFind, &ffd) != 0) {
+        char stat_path[MAX_PATH];
+        char *name = ffd.cFileName;
 
         if(name[0] == '.') {
             if(name[1] == 0) continue;
@@ -636,22 +670,28 @@ static int local_build_list(copyinfo **filelist,
          * We could use d_type if HAVE_DIRENT_D_TYPE is defined, but reiserfs
          * always returns DT_UNKNOWN, so we just use stat() for all cases.
          */
-        if (strlen(lpath) + strlen(de->d_name) + 1 > sizeof(stat_path))
+		char UTF8Name[260];
+		int nameLength = GBKToUTF8(name, NULL, 0);
+		nameLength = GBKToUTF8(name, UTF8Name, nameLength);
+		if (strlen(lpath) + strlen(ffd.cFileName) + 1 > sizeof(stat_path)) {
             continue;
+        }
         strcpy(stat_path, lpath);
-        strcat(stat_path, de->d_name);
+		strcat(stat_path, ffd.cFileName);
 
         if(!lstat(stat_path, &st)) {
             if (S_ISDIR(st.st_mode)) {
-                ci = mkcopyinfo(lpath, rpath, name, 1);
+                ci = mkcopyinfo(lpath, rpath, name, name, 1);
+				ci = mkcopyinfo(lpath, rpath, name, UTF8Name, 1);
                 ci->next = dirlist;
                 dirlist = ci;
             } else {
-                ci = mkcopyinfo(lpath, rpath, name, 0);
+                ci = mkcopyinfo(lpath, rpath, name, name, 0);
+				ci = mkcopyinfo(lpath, rpath, name, UTF8Name, 0);
                 if(lstat(ci->src, &st)) {
                     fprintf(stderr,"cannot stat '%s': %s\n", ci->src, strerror(errno));
                     free(ci);
-                    closedir(d);
+					FindClose(hFind);
                     return -1;
                 }
                 if(!S_ISREG(st.st_mode) && !S_ISLNK(st.st_mode)) {
@@ -670,8 +710,8 @@ static int local_build_list(copyinfo **filelist,
         }
     }
 
-    closedir(d);
-
+	FindClose(hFind);
+    
     for(ci = dirlist; ci != 0; ci = next) {
         next = ci->next;
         local_build_list(filelist, ci->src, ci->dst);
@@ -797,8 +837,12 @@ int do_sync_push(const char *lpath, const char *rpath, int show_progress)
             snprintf(tmp, tmplen, "%s/%s", rpath, name);
             rpath = tmp;
         }
+        char *UTF8rpath = NULL;
+        int length = GBKToUTF8(rpath, NULL, 0);
+        UTF8rpath = malloc(length + 1);
+        GBKToUTF8(rpath, UTF8rpath, length);
         BEGIN();
-        if(sync_send(fd, lpath, rpath, st.st_mtime, st.st_mode, show_progress)) {
+        if(sync_send(fd, lpath, UTF8rpath, st.st_mtime, st.st_mode, show_progress)) {
             return 1;
         } else {
             END();
@@ -825,6 +869,10 @@ sync_ls_build_list_cb(unsigned mode, unsigned size, unsigned time,
     sync_ls_build_list_cb_args *args = (sync_ls_build_list_cb_args *)cookie;
     copyinfo *ci;
 
+	char UTF8Name[260];
+	int nameLength = GBKToUTF8(name, NULL, 0);
+	nameLength = GBKToUTF8(name, UTF8Name, 0);
+
     if (S_ISDIR(mode)) {
         copyinfo **dirlist = args->dirlist;
 
@@ -834,13 +882,15 @@ sync_ls_build_list_cb(unsigned mode, unsigned size, unsigned time,
             if ((name[1] == '.') && (name[2] == '\0')) return;
         }
 
-        ci = mkcopyinfo(args->rpath, args->lpath, name, 1);
+        ci = mkcopyinfo(args->rpath, args->lpath, name, name, 1);
+		ci = mkcopyinfo(args->rpath, args->lpath, name, UTF8Name, 1);
         ci->next = *dirlist;
         *dirlist = ci;
     } else if (S_ISREG(mode) || S_ISLNK(mode)) {
         copyinfo **filelist = args->filelist;
 
-        ci = mkcopyinfo(args->rpath, args->lpath, name, 0);
+        ci = mkcopyinfo(args->rpath, args->lpath, name, name, 0);
+		ci = mkcopyinfo(args->rpath, args->lpath, name, UTF8Name, 0);
         ci->time = time;
         ci->mode = mode;
         ci->size = size;
@@ -890,7 +940,7 @@ static int set_time_and_mode(const char *lpath, unsigned int time, unsigned int 
     umask(mask);
     int r2 = chmod(lpath, mode & ~mask);
 
-    return r1 ? : r2;
+    return r1 ? 0 : r2;
 }
 
 /* Return a copy of the path string with / appended if needed */
@@ -975,6 +1025,11 @@ finish:
 
 int do_sync_pull(const char *rpath, const char *lpath, int show_progress, int copy_attrs)
 {
+    char *UTF8rpath = NULL;
+    int length = GBKToUTF8(rpath, NULL, 0);
+    UTF8rpath = malloc(length +1 );
+    GBKToUTF8(rpath, UTF8rpath, length);
+
     unsigned mode, time;
     struct stat st;
 
@@ -986,7 +1041,7 @@ int do_sync_pull(const char *rpath, const char *lpath, int show_progress, int co
         return 1;
     }
 
-    if(sync_readtime(fd, rpath, &time, &mode)) {
+    if(sync_readtime(fd, UTF8rpath, &time, &mode)) {
         return 1;
     }
     if(mode == 0) {
@@ -1014,7 +1069,7 @@ int do_sync_pull(const char *rpath, const char *lpath, int show_progress, int co
             }
         }
         BEGIN();
-        if (sync_recv(fd, rpath, lpath, show_progress)) {
+        if (sync_recv(fd, UTF8rpath, lpath, show_progress)) {
             return 1;
         } else {
             if (copy_attrs && set_time_and_mode(lpath, time, mode))
@@ -1056,4 +1111,64 @@ int do_sync_sync(const char *lpath, const char *rpath, int listonly)
         sync_quit(fd);
         return 0;
     }
+}
+
+int GBKToUTF8(char *lpGBKStr, char *lpUTF8Str, int nUTF8StrLen)
+{
+	wchar_t *lpUnicodeStr = NULL;
+	int nRetLen = 0;
+
+	if (!lpGBKStr) return 0;
+
+	nRetLen = MultiByteToWideChar(CP_ACP, 0, (char *)lpGBKStr, -1, NULL, 0);
+	lpUnicodeStr = (wchar_t *)malloc(sizeof(WCHAR) * (nRetLen + 1));
+	nRetLen = MultiByteToWideChar(CP_ACP, 0, (char *)lpGBKStr, -1, lpUnicodeStr, nRetLen);
+
+	if (!nRetLen) return 0;
+
+	nRetLen = WideCharToMultiByte(CP_UTF8, 0, lpUnicodeStr, -1, NULL, 0, NULL, 0);
+	if (!lpUTF8Str) {
+		if (lpUnicodeStr) free(lpUnicodeStr);
+		return nRetLen;
+	}
+	if (nUTF8StrLen < nRetLen) {
+		if (lpUnicodeStr) free(lpUnicodeStr);
+		return 0;
+	}
+	nRetLen = WideCharToMultiByte(CP_UTF8, 0, lpUnicodeStr, -1, (char *)lpUTF8Str, nUTF8StrLen, NULL, 0);
+
+	if (lpUnicodeStr) free(lpUnicodeStr);
+
+	return nRetLen;
+}
+
+int UTF8ToGBK(char *lpGBKStr, char *lpUTF8Str, int nGBKStrLen)
+{
+	wchar_t *lpUnicodeStr = NULL;
+	int nRetLen = 0;
+
+	if (!lpUTF8Str) return 0;
+
+	nRetLen = MultiByteToWideChar(CP_UTF8, 0, (char*)lpUTF8Str, -1, NULL, NULL);
+	lpUnicodeStr = (wchar_t *)malloc(sizeof(WCHAR) * (nRetLen + 1));
+	nRetLen = MultiByteToWideChar(CP_UTF8, 0, (char *)lpUTF8Str, -1, lpUnicodeStr, nRetLen);
+
+	if (!nRetLen) return 0;
+	nRetLen = WideCharToMultiByte(CP_UTF8, 0, lpUnicodeStr, -1, NULL, 0, NULL, NULL);
+
+	if (!lpGBKStr) {
+		if (lpUnicodeStr) free(lpUnicodeStr);
+		return nRetLen;
+	}
+
+	if (nGBKStrLen < nRetLen) {
+		if (lpUnicodeStr) free(lpUnicodeStr);
+		return 0;
+	}
+
+	nRetLen = WideCharToMultiByte(CP_ACP, 0, lpUnicodeStr, -1, (char *)lpGBKStr, nGBKStrLen, NULL, NULL);
+
+	if (lpUnicodeStr) free(lpUnicodeStr);
+
+	return nRetLen;
 }

@@ -16,7 +16,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+//#include <unistd.h>
 #include <string.h>
 #include <errno.h>
 
@@ -28,13 +28,13 @@
 static void transport_unref(atransport *t);
 
 static atransport transport_list = {
-    .next = &transport_list,
-    .prev = &transport_list,
+    &transport_list,
+    &transport_list,
 };
 
 static atransport pending_list = {
-    .next = &pending_list,
-    .prev = &pending_list,
+    &pending_list,
+    &pending_list,
 };
 
 ADB_MUTEX_DEFINE( transport_lock );
@@ -874,9 +874,16 @@ retry:
         }
          /* check for required connection state */
         if (result && state != CS_ANY && result->connection_state != state) {
-            if (error_out)
-                *error_out = "invalid device state";
-            result = NULL;
+            /* regard CS_RECOVERY as CS_DEVICE, so wait-for-device script can be available in the recovery mode.*/
+            if (state == CS_DEVICE && result->connection_state == CS_RECOVERY)
+            {
+                fprintf(stderr, "ADBEx Debug: wait-for-device script is being used in recovery mode.\nstate == %d, result->connection_state == %d\n",
+                    state, result->connection_state);
+            } else {
+                if (error_out)
+                    *error_out = "invalid device state";
+                result = NULL;
+            }
         }
     }
 

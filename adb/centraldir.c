@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <utils/Compat.h>
+//#include <utils/Compat.h>
 
 enum {
     // finding the directory
@@ -152,7 +152,7 @@ read_central_dir(Zipfile *file)
     int err;
 
     const unsigned char* buf = file->buf;
-    ZD_TYPE bufsize = file->bufsize;
+    ssize_t bufsize = file->bufsize;
     const unsigned char* eocd;
     const unsigned char* p;
     const unsigned char* start;
@@ -161,7 +161,7 @@ read_central_dir(Zipfile *file)
 
     // too small to be a ZIP archive?
     if (bufsize < EOCD_LEN) {
-        fprintf(stderr, "Length is " ZD " -- too small\n", bufsize);
+        fprintf(stderr, "Length is %zd -- too small\n", bufsize);
         goto bail;
     }
 

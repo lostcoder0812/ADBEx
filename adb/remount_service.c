@@ -18,7 +18,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#include <mntent.h>
+//#include <mntent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -97,7 +97,7 @@ static int remount(const char* dir, int* dir_ro)
 
     dev = find_mount(dir);
 
-    if (!dev || make_block_device_writable(dev)) {
+    if (!dev) {
         goto errout;
     }
 

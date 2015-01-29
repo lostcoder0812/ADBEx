@@ -61,7 +61,7 @@ void framebuffer_service(int fd, void *cookie)
     int w, h, f;
     int fds[2];
 
-    if (pipe2(fds, O_CLOEXEC) < 0) goto pipefail;
+    if (pipe(fds) < 0) goto done;
 
     pid_t pid = fork();
     if (pid < 0) goto done;
@@ -167,16 +167,18 @@ void framebuffer_service(int fd, void *cookie)
     /* write data */
     for(i = 0; i < fbinfo.size; i += bsize) {
       bsize = sizeof(buf);
-      if (i + bsize > fbinfo.size)
-        bsize = fbinfo.size - i;
+      /*if (i + bsize > fbinfo.size)
+        bsize = fbinfo.size - i;*/
       if(readx(fd_screencap, buf, bsize)) goto done;
       if(writex(fd, buf, bsize)) goto done;
     }
+    if(readx(fd_screencap, buf, fbinfo.size % sizeof(buf))) goto done;
+    if(writex(fd, buf, fbinfo.size % sizeof(buf))) goto done;
 
 done:
     close(fds[0]);
 
     TEMP_FAILURE_RETRY(waitpid(pid, NULL, 0));
-pipefail:
+//pipefail:
     close(fd);
 }

@@ -26,6 +26,7 @@
 
 #ifdef _WIN32
 
+#include <win32_adb.h>
 #include <winsock2.h>
 #include <windows.h>
 #include <ws2tcpip.h>
@@ -49,6 +50,7 @@ typedef CRITICAL_SECTION          adb_mutex_t;
 /* For win32, adb_sysdeps_init() will do the mutex runtime initialization. */
 #define  ADB_MUTEX(x)   extern adb_mutex_t  x;
 #include "mutex_list.h"
+#include <direct.h>
 
 extern void  adb_sysdeps_init(void);
 

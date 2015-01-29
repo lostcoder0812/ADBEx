@@ -35,6 +35,8 @@ struct adb_public_key {
     RSAPublicKey key;
 };
 
+static struct listnode key_list;
+
 static char *key_paths[] = {
     "/adb_keys",
     "/data/misc/adb/adb_keys",
@@ -44,10 +46,10 @@ static char *key_paths[] = {
 static fdevent listener_fde;
 static int framework_fd = -1;
 
-static void usb_disconnected(void* unused, atransport* t);
+/*static void usb_disconnected(void* unused, atransport* t);
 static struct adisconnect usb_disconnect = { usb_disconnected, 0, 0, 0 };
 static atransport* usb_transport;
-static bool needs_retry = false;
+static bool needs_retry = false;*/
 
 static void read_keys(const char *file, struct listnode *list)
 {
@@ -57,7 +59,7 @@ static void read_keys(const char *file, struct listnode *list)
     char *sep;
     int ret;
 
-    f = fopen(file, "re");
+    f = fopen(file, "r");
     if (!f) {
         D("Can't open '%s'\n", file);
         return;
@@ -105,18 +107,18 @@ static void free_keys(struct listnode *list)
     }
 }
 
-static void load_keys(struct listnode *list)
+void adb_auth_reload_keys(void)
 {
     char *path;
     char **paths = key_paths;
     struct stat buf;
 
-    list_init(list);
+    free_keys(&key_list);
 
     while ((path = *paths++)) {
         if (!stat(path, &buf)) {
             D("Loading keys from '%s'\n", path);
-            read_keys(path, list);
+            read_keys(path, &key_list);
         }
     }
 }
@@ -126,7 +128,7 @@ int adb_auth_generate_token(void *token, size_t token_size)
     FILE *f;
     int ret;
 
-    f = fopen("/dev/urandom", "re");
+    f = fopen("/dev/urandom", "r");
     if (!f)
         return 0;
 
@@ -140,7 +142,7 @@ int adb_auth_verify(void *token, void *sig, int siglen)
 {
     struct listnode *item;
     struct adb_public_key *key;
-    struct listnode key_list;
+    //struct listnode key_list;
     int ret = 0;
 
     if (siglen != RSANUMBYTES)
@@ -152,24 +154,25 @@ int adb_auth_verify(void *token, void *sig, int siglen)
         key = node_to_item(item, struct adb_public_key, node);
         ret = RSA_verify(&key->key, sig, siglen, token, SHA_DIGEST_SIZE);
         if (ret)
-            break;
+            return 1;
     }
 
     free_keys(&key_list);
 
-    return ret;
+    return 0;
 }
 
-static void usb_disconnected(void* unused, atransport* t)
+/*static void usb_disconnected(void* unused, atransport* t)
 {
     D("USB disconnect\n");
     remove_transport_disconnect(usb_transport, &usb_disconnect);
     usb_transport = NULL;
     needs_retry = false;
-}
+}*/
 
 static void adb_auth_event(int fd, unsigned events, void *data)
 {
+    atransport *t = data;
     char response[2];
     int ret;
 
@@ -177,13 +180,14 @@ static void adb_auth_event(int fd, unsigned events, void *data)
         ret = unix_read(fd, response, sizeof(response));
         if (ret <= 0) {
             D("Framework disconnect\n");
-            if (usb_transport)
-                fdevent_remove(&usb_transport->auth_fde);
+            /*if (usb_transport)
+                fdevent_remove(&usb_transport->auth_fde);*/
+            fdevent_remove(&t->auth_fde);
             framework_fd = -1;
         }
         else if (ret == 2 && response[0] == 'O' && response[1] == 'K') {
-            if (usb_transport)
-                adb_auth_verified(usb_transport);
+            adb_auth_reload_keys();
+            adb_auth_verified(t);
         }
     }
 }
@@ -193,14 +197,14 @@ void adb_auth_confirm_key(unsigned char *key, size_t len, atransport *t)
     char msg[MAX_PAYLOAD];
     int ret;
 
-    if (!usb_transport) {
+    /*if (!usb_transport) {
         usb_transport = t;
         add_transport_disconnect(t, &usb_disconnect);
-    }
+    }*/
 
     if (framework_fd < 0) {
         D("Client not connected\n");
-        needs_retry = true;
+        //needs_retry = true;
         return;
     }
 
@@ -242,22 +246,25 @@ static void adb_auth_listener(int fd, unsigned events, void *data)
 
     framework_fd = s;
 
-    if (needs_retry) {
+    /*if (needs_retry) {
         needs_retry = false;
         send_auth_request(usb_transport);
-    }
+    }*/
 }
 
 void adb_auth_init(void)
 {
     int fd, ret;
 
+    list_init(&key_list);
+    adb_auth_reload_keys();
+
     fd = android_get_control_socket("adbd");
     if (fd < 0) {
         D("Failed to get adbd socket\n");
         return;
     }
-    fcntl(fd, F_SETFD, FD_CLOEXEC);
+    //fcntl(fd, F_SETFD, FD_CLOEXEC);
 
     ret = listen(fd, 4);
     if (ret < 0) {

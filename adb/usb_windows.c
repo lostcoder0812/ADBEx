@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <win32_adb.h>
 #include <winsock2.h>
 #include <windows.h>
 #include <winerror.h>
@@ -27,6 +28,7 @@
 
 #define   TRACE_TAG  TRACE_USB
 #include "adb.h"
+#include <crtdbg.h>
 
 /** Structure usb_handle describes our connection to the usb device via
   AdbWinApi.dll. This structure is returned from usb_open() routine and
@@ -60,8 +62,8 @@ static const GUID usb_class_id = ANDROID_USB_CLASS_ID;
 
 /// List of opened usb handles
 static usb_handle handle_list = {
-  .prev = &handle_list,
-  .next = &handle_list,
+  &handle_list,
+  &handle_list,
 };
 
 /// Locker for the list of opened usb handles

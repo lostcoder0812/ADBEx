@@ -17,7 +17,7 @@
 #ifndef __CUTILS_ANDROID_REBOOT_H__
 #define __CUTILS_ANDROID_REBOOT_H__
 
-__BEGIN_DECLS
+//__BEGIN_DECLS
 
 /* Commands */
 #define ANDROID_RB_RESTART  0xDEAD0001
@@ -30,6 +30,6 @@ __BEGIN_DECLS
 
 int android_reboot(int cmd, int flags, char *arg);
 
-__END_DECLS
+//__END_DECLS
 
 #endif /* __CUTILS_ANDROID_REBOOT_H__ */

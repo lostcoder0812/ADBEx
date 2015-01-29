@@ -27,9 +27,6 @@
     <ClInclude Include="mutex_list.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="file_sync_service.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="fdevent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -53,18 +50,6 @@
     <ClCompile Include="usb_windows.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="usb_osx.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="usb_linux_client.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="usb_linux.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="usb_libusb.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="transport_usb.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -74,52 +59,16 @@
     <ClCompile Include="transport.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="test_track_jdwp.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="test_track_devices.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="sysdeps_win32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="sockets.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="set_verity_enable_state_service.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="services.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="remount_service.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="jdwp_service.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="get_my_path_windows.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="get_my_path_linux.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="get_my_path_freebsd.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="get_my_path_darwin.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="framebuffer_service.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="file_sync_service.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="file_sync_client.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="fdevent.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="console.c">
@@ -137,10 +86,10 @@
     <ClCompile Include="adb_auth_host.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="adb_auth_client.c">
+    <ClCompile Include="adb.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="adb.c">
+    <ClCompile Include="file_sync_client.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

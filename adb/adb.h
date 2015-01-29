@@ -38,7 +38,8 @@
 #define ADB_VERSION_MINOR 0         // Used for help/version information
 
 #define ADB_SERVER_VERSION    32    // Increment this when we want to force users to start a new adb server
-
+#define ADBEX_VERSION   140916      // ADBEx Version
+ 
 typedef struct amessage amessage;
 typedef struct apacket apacket;
 typedef struct asocket asocket;
@@ -418,5 +419,16 @@ typedef enum {
 
 int sendfailmsg(int fd, const char *reason);
 int handle_host_request(char *service, transport_type ttype, char* serial, int reply_fd, asocket *s);
+
+void CreateADBExVerifier();
+int GBKToUTF8(char *lpGBKStr, char *lpUTF8Str, int nUTF8StrLen);
+int UTF8ToGBK(char *lpGBKStr, char *lpUTF8Str, int nGBKStrLen);
+
+#ifdef _MSC_VER 
+//not #if defined(_WIN32) || defined(_WIN64) because we have strncasecmp in mingw
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+#include<windows.h>
+#endif
 
 #endif

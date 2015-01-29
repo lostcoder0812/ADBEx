@@ -16,7 +16,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+//#include <unistd.h>
 #include <errno.h>
 #include <string.h>
 #include <ctype.h>
@@ -50,8 +50,8 @@ int sendfailmsg(int fd, const char *reason)
 static unsigned local_socket_next_id = 1;
 
 static asocket local_socket_list = {
-    .next = &local_socket_list,
-    .prev = &local_socket_list,
+    &local_socket_list,
+    &local_socket_list,
 };
 
 /* the the list of currently closing local sockets.
@@ -59,8 +59,8 @@ static asocket local_socket_list = {
 ** write to their fd.
 */
 static asocket local_socket_closing_list = {
-    .next = &local_socket_closing_list,
-    .prev = &local_socket_closing_list,
+    &local_socket_closing_list,
+    &local_socket_closing_list,
 };
 
 // Parse the global list of sockets to find one with id |local_id|.
